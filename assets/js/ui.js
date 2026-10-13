@@ -665,6 +665,92 @@
     return out;
   }
 
+  /* =========================================================
+   * 3. Freight calculator (density-based class)
+   * ========================================================= */
+  fillSelect($('#fc-scale'), Object.keys(Core.FREIGHT_SCALES).map(function (k) { return [k, Core.FREIGHT_SCALES[k].label]; }), 'classic');
+  var fc = null;
+  var fcUnits = function () { var u = $('#fc-units').value.split('/'); return { d: u[0], w: u[1] }; };
+  var n2 = function (v) { return Core.fmt(Core.roundTo(v, 2), 2); };
+
+  function fcAddRow(r) {
+    r = r || { qty: 1, l: '', w: '', h: '', weight: '' };
+    var tr = document.createElement('tr');
+    var inp = function (cls, v, step) { return '<td><input class="' + cls + ' num" type="number" min="0" step="' + (step || 'any') + '" value="' + esc(v) + '"></td>'; };
+    tr.innerHTML = inp('f-q', r.qty, '1') + inp('f-l', r.l) + inp('f-w', r.w) + inp('f-h', r.h) + inp('f-wt', r.weight) +
+      '<td><button type="button" class="icon-btn sm" data-action="fc-del" aria-label="Remove row">×</button></td>';
+    $('#fc-input tbody').appendChild(tr);
+  }
+  function fcSetRows(list) { $('#fc-input tbody').innerHTML = ''; list.forEach(fcAddRow); renderFreight(); }
+  function fcReadRows() {
+    return $$('#fc-input tbody tr').map(function (tr) {
+      return { qty: parseFloat($('.f-q', tr).value) || 1, l: parseFloat($('.f-l', tr).value), w: parseFloat($('.f-w', tr).value),
+        h: parseFloat($('.f-h', tr).value), weight: parseFloat($('.f-wt', tr).value) };
+    }).filter(function (r) { return [r.l, r.w, r.h, r.weight].every(function (v) { return !isNaN(v) && v > 0; }); });
+  }
+
+  function renderFreight() {
+    var u = fcUnits(), per = $('#fc-weightper').value, scale = $('#fc-scale').value;
+    $('#fc-h-l').textContent = 'Length (' + u.d + ')'; $('#fc-h-w').textContent = 'Width (' + u.d + ')'; $('#fc-h-h').textContent = 'Height (' + u.d + ')';
+    $('#fc-h-wt').textContent = 'Weight (' + u.w + (per === 'line' ? ', line total' : ', per piece') + ')';
+    $('#sum-fc').textContent = u.d + '/' + u.w + ' · weight ' + (per === 'line' ? 'per line' : 'per piece') + ' · ' + (scale === 'classic' ? 'classic chart' : 'NMFC 2025');
+
+    var lines = fcReadRows();
+    $('#fc-count').textContent = '(' + lines.length + ')';
+    fc = lines.length ? Core.calcFreight(lines, { dUom: u.d, wUom: u.w, weightPer: per, scale: scale }) : null;
+
+    // Density chart with the shipment's tier highlighted
+    var tiers = Core.FREIGHT_SCALES[scale].tiers;
+    $('#fc-chart tbody').innerHTML = tiers.map(function (t, i) {
+      var range = i === 0 ? t[0] + ' or more' : t[0] === 0 ? 'under ' + tiers[i - 1][0] : t[0] + ' to under ' + tiers[i - 1][0];
+      return '<tr' + (fc && fc.totals.cls === t[1] ? ' class="hit"' : '') + '><td class="num">' + range + '</td><td class="num">' + t[1] + '</td></tr>';
+    }).join('');
+
+    if (!fc) {
+      $('#fc-result').innerHTML = '';
+      $('#fc-table thead').innerHTML = ''; $('#fc-table tfoot').innerHTML = '';
+      $('#fc-table tbody').innerHTML = '<tr><td class="empty-row">Enter dimensions and weight above.</td></tr>';
+      $('#fc-summary').textContent = '';
+      return;
+    }
+    var t = fc.totals;
+    $('#fc-result').innerHTML =
+      '<div class="fc-class"><span>Estimated freight class</span><strong>' + t.cls + '</strong></div>' +
+      '<div class="fc-stat"><span>Total volume</span><strong>' + n2(t.cuFt) + ' ft³</strong></div>' +
+      '<div class="fc-stat"><span>Total weight</span><strong>' + n2(t.lbs) + ' lb</strong></div>' +
+      '<div class="fc-stat"><span>Density</span><strong>' + n2(t.density) + ' lb/ft³</strong></div>';
+    $('#fc-summary').innerHTML = t.pieces + ' piece' + (t.pieces === 1 ? '' : 's') + ' on ' + fc.rows.length + ' line' + (fc.rows.length === 1 ? '' : 's');
+
+    var cell = function (val, f) { return '<td class="num"><strong>' + val + '</strong>' + (f ? '<small class="calc">' + f + '</small>' : '') + '</td>'; };
+    var metric = u.d !== 'IN' || u.w !== 'LB';
+    $('#fc-table thead').innerHTML = '<tr><th>Line</th><th class="num">Pieces</th><th class="num">Dimensions (' + u.d + ')</th><th class="num">Cubic feet</th><th class="num">Weight (lb)</th><th class="num">Density (lb/ft³)</th><th class="num">Class</th></tr>';
+    $('#fc-table tbody').innerHTML = fc.rows.map(function (r, i) {
+      var s = r.src;
+      var ftF = (metric ? Number(r.cuInPiece.toPrecision(10)) + ' in³' : s.l + ' × ' + s.w + ' × ' + s.h + ' = ' + Number(r.cuInPiece.toPrecision(10)) + ' in³') +
+        ' ÷ 1728' + (r.qty > 1 ? ' × ' + r.qty : '');
+      var lbF = (u.w !== 'LB' ? s.weight + ' KG × 2.204622622' : s.weight + ' LB') + (per === 'piece' && r.qty > 1 ? ' × ' + r.qty : '');
+      return '<tr><td>' + (i + 1) + '</td>' + cell(r.qty) + cell(s.l + ' × ' + s.w + ' × ' + s.h) +
+        cell(n2(r.cuFt), ftF) + cell(n2(r.lbs), lbF) + cell(n2(r.density), n2(r.lbs) + ' ÷ ' + n2(r.cuFt)) + cell(r.cls) + '</tr>';
+    }).join('');
+    $('#fc-table tfoot').innerHTML = '<tr><td>Shipment</td><td class="num"><strong>' + t.pieces + '</strong></td><td></td>' +
+      cell(n2(t.cuFt)) + cell(n2(t.lbs)) + cell(n2(t.density), n2(t.lbs) + ' ÷ ' + n2(t.cuFt)) + cell(t.cls) + '</tr>';
+  }
+
+  function fcRows() {
+    if (!fc) return [];
+    var u = fcUnits();
+    var rows = [['Line', 'Pieces', 'Length (' + u.d + ')', 'Width (' + u.d + ')', 'Height (' + u.d + ')', 'Weight entered (' + u.w + ')', 'Cubic feet', 'Weight (lb)', 'Density (lb/ft3)', 'Class']];
+    fc.rows.forEach(function (r, i) {
+      rows.push([i + 1, r.qty, r.src.l, r.src.w, r.src.h, r.src.weight, n2(r.cuFt), n2(r.lbs), n2(r.density), r.cls]);
+    });
+    var t = fc.totals;
+    rows.push(['Shipment', t.pieces, '', '', '', '', n2(t.cuFt), n2(t.lbs), n2(t.density), t.cls]);
+    return rows;
+  }
+
+  $('#panel-fc').addEventListener('input', renderFreight);
+  $('#panel-fc').addEventListener('change', renderFreight);
+
   /* ---------- Table → PNG (for pasting into test evidence) ---------- */
   // Draws the rendered table onto a canvas so the image matches the screen exactly.
   function tableToCanvas(table, title, subtitle) {
@@ -803,12 +889,35 @@
       toast('Imported ' + rows.length + ' rows');
     },
     'cv-del': function (btn) { btn.closest('tr').remove(); renderConversion(); },
+    'fc-add': function () { fcAddRow(); renderFreight(); $('.f-l', $$('#fc-input tbody tr').pop()).focus(); },
+    'fc-clear': function () { fcSetRows([]); fcAddRow(); },
+    'fc-del': function (btn) { btn.closest('tr').remove(); renderFreight(); },
+    'fc-tsv': function () { var r = fcRows(); if (!r.length) return toast('Nothing to copy'); copy(Core.toTSV(r), 'Copied ' + (r.length - 2) + ' lines'); },
+    'fc-csv': function () { var r = fcRows(); if (!r.length) return toast('Nothing to export'); download('freight-class-' + stamp() + '.csv', Core.toCSV(r)); },
+    'fc-from-hu': function () {
+      var hus = readInputRows();
+      if (!hus.length) return toast('No HUs on the Handling Units tab');
+      var u = fcUnits();
+      fcSetRows(hus.map(function (h) {
+        var d = function (v) { return Core.roundTo(Core.convertLength(v, h.dUom, u.d), 2); };
+        return { qty: 1, l: d(h.l), w: d(h.w), h: d(h.h), weight: Core.roundTo(Core.convertWeight(h.weight, h.wUom, u.w), 2) };
+      }));
+      $('#fc-weightper').value = 'piece'; renderFreight();
+      toast('Loaded ' + hus.length + ' HUs (converted to ' + u.d + '/' + u.w + ')');
+    },
+    'fc-image': function () {
+      if (!fc) return toast('Nothing to copy');
+      var t = fc.totals;
+      var sub = 'Estimated class ' + t.cls + ' · ' + n2(t.cuFt) + ' ft³ · ' + n2(t.lbs) + ' lb · ' + n2(t.density) + ' lb/ft³ · ' +
+        Core.FREIGHT_SCALES[$('#fc-scale').value].label;
+      copyCanvas(tableToCanvas($('#fc-table'), 'Freight class calculation', sub), 'freight-class-' + stamp() + '.png');
+    },
     'cv-image': function () {
       if (!conv || !cvOn()) return toast('Nothing to copy');
       var o = convOpts();
       var sub = conv.rows.length + ' HU' + (conv.rows.length === 1 ? '' : 's') + ' · ' + o.wDp + ' weight / ' + o.dDp + ' dim decimals · ' +
         $('#cv-mode').selectedOptions[0].text.replace(/ \(.*/, '').toLowerCase() + ' rounding' +
-        (o.dimWeight ? ' · dim divisor ' + o.divisor : '') + (huSeed ? ' · seed ' + huSeed : '');
+        (o.dimWeight ? ' · dim divisor ' + o.divisor : '');
       copyCanvas(tableToCanvas($('#cv-table'), $('#cv-title').textContent, sub), 'uom-conversion-' + stamp() + '.png');
     }
   };
@@ -823,6 +932,7 @@
   updateSummaries();
   generateAddresses();
   generateHUs();
+  fcSetRows([{ qty: 1, l: 48, w: 40, h: 48, weight: 500 }]);
   try {
     var saved = localStorage.getItem('qa-toolkit-tab');
     if (saved && $('#panel-' + saved)) showTab(saved);

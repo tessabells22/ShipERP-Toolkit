@@ -138,6 +138,50 @@
     return { rows: rows, totals: totals };
   }
 
+  /* ---------- Freight class (LTL density) ----------
+   * Each scale lists [minimum density in lb/ft³, class], highest density first.
+   * A density exactly on a boundary takes the lower class (e.g. 15.0 PCF -> 70). */
+  var FREIGHT_SCALES = {
+    classic: {
+      label: 'Classic 18-class density chart',
+      tiers: [[50, '50'], [35, '55'], [30, '60'], [22.5, '65'], [15, '70'], [13.5, '77.5'], [12, '85'], [10.5, '92.5'],
+        [9, '100'], [8, '110'], [7, '125'], [6, '150'], [5, '175'], [4, '200'], [3, '250'], [2, '300'], [1, '400'], [0, '500']]
+    },
+    nmfc2025: {
+      label: 'NMFC 13-tier density scale (2025)',
+      tiers: [[50, '50'], [35, '55'], [30, '60'], [22.5, '65'], [15, '70'], [12, '85'], [10, '92.5'], [8, '100'],
+        [6, '125'], [4, '175'], [2, '250'], [1, '300'], [0, '400']]
+    }
+  };
+
+  function freightClass(density, scale) {
+    var tiers = (FREIGHT_SCALES[scale] || FREIGHT_SCALES.classic).tiers;
+    for (var i = 0; i < tiers.length; i++) if (density >= tiers[i][0]) return tiers[i][1];
+    return tiers[tiers.length - 1][1];
+  }
+
+  /* lines: [{ qty, l, w, h, weight }]
+   * opts: { dUom: 'IN'|'CM', wUom: 'LB'|'KG', weightPer: 'piece'|'line', scale } */
+  function calcFreight(lines, opts) {
+    var toIn = factor(LENGTH, opts.dUom, 'IN');
+    var toLb = factor(WEIGHT, opts.wUom, 'LB');
+    var rows = lines.map(function (ln) {
+      var qty = Math.max(1, Math.round(ln.qty || 1));
+      var cuIn = ln.l * toIn * ln.w * toIn * ln.h * toIn;          // one piece
+      var cuFt = cuIn / 1728 * qty;
+      var lbs = ln.weight * toLb * (opts.weightPer === 'line' ? 1 : qty);
+      var density = cuFt > 0 ? lbs / cuFt : 0;
+      return { src: ln, qty: qty, cuInPiece: cuIn, cuFt: cuFt, lbs: lbs, density: density, cls: freightClass(density, opts.scale) };
+    });
+    var totFt = rows.reduce(function (s, r) { return s + r.cuFt; }, 0);
+    var totLb = rows.reduce(function (s, r) { return s + r.lbs; }, 0);
+    var dens = totFt > 0 ? totLb / totFt : 0;
+    return {
+      rows: rows,
+      totals: { pieces: rows.reduce(function (s, r) { return s + r.qty; }, 0), cuFt: totFt, lbs: totLb, density: dens, cls: freightClass(dens, opts.scale) }
+    };
+  }
+
   /* ---------- Special characters ---------- */
   // First group mirrors the carrier special-character table (/ERPIS/CHARS2) and is preselected.
   var CHAR_SETS = [
@@ -250,6 +294,7 @@
     WEIGHT: WEIGHT, LENGTH: LENGTH, factor: factor, factorText: factorText,
     convertWeight: convertWeight, convertLength: convertLength,
     DIM_DIVISORS: DIM_DIVISORS, convertHUs: convertHUs,
+    FREIGHT_SCALES: FREIGHT_SCALES, freightClass: freightClass, calcFreight: calcFreight,
     CHAR_SETS: CHAR_SETS, parseChars: parseChars,
     toSegments: toSegments, segText: segText, segLength: segLength,
     insertSeg: insertSeg, injectSeg: injectSeg, inject: inject,

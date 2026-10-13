@@ -32,6 +32,7 @@
   <nav class="tabs wrap" role="tablist" aria-label="Tools">
     <button class="tab is-active" role="tab" data-tab="addr" aria-selected="true">Addresses</button>
     <button class="tab" role="tab" data-tab="hu" aria-selected="false">Handling Units</button>
+    <button class="tab" role="tab" data-tab="fc" aria-selected="false">Freight Calculator</button>
   </nav>
 
   <main class="wrap" id="tool">
@@ -317,6 +318,80 @@
               <thead></thead><tbody></tbody><tfoot></tfoot>
             </table>
           </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- ================= 3. FREIGHT CALCULATOR ================= -->
+    <section class="panel" id="panel-fc" role="tabpanel" hidden>
+      <aside class="controls card controls-acc">
+        <section class="acc is-open">
+          <div class="acc-head">
+            <button type="button" class="acc-toggle" aria-expanded="true">
+              <span class="acc-title">Settings</span><span class="acc-sum" id="sum-fc"></span>
+            </button>
+          </div>
+          <div class="acc-body">
+            <label class="field"><span>Units</span>
+              <select id="fc-units"><option value="IN/LB">Inches / pounds</option><option value="CM/KG">Centimetres / kilograms</option></select>
+            </label>
+            <label class="field"><span>Weight entered is</span>
+              <select id="fc-weightper"><option value="piece">Per piece</option><option value="line">Total for the line</option></select>
+            </label>
+            <label class="field"><span>Class scale</span>
+              <select id="fc-scale"></select>
+            </label>
+            <p class="hint">Freight class here is estimated from density only. Some commodities have a fixed NMFC class regardless of density.</p>
+          </div>
+        </section>
+        <section class="acc">
+          <div class="acc-head">
+            <button type="button" class="acc-toggle" aria-expanded="false">
+              <span class="acc-title">Density chart</span><span class="acc-sum">lb/ft³ → class</span>
+            </button>
+          </div>
+          <div class="acc-body"><table class="data chart" id="fc-chart"><thead><tr><th class="num">Density (lb/ft³)</th><th class="num">Class</th></tr></thead><tbody></tbody></table></div>
+        </section>
+        <div class="controls-foot">
+          <button class="btn btn-ghost btn-block" data-action="fc-from-hu" type="button">Use HUs from Handling Units tab</button>
+        </div>
+      </aside>
+
+      <section class="results">
+        <div class="toolbar">
+          <div class="toolbar-info" id="fc-summary"></div>
+          <div class="toolbar-actions">
+            <button class="btn btn-ghost" data-action="fc-tsv" type="button">Copy for Excel</button>
+            <button class="btn btn-secondary" data-action="fc-csv" type="button">Download CSV</button>
+          </div>
+        </div>
+
+        <div class="card input-card">
+          <div class="toolbar">
+            <h3>Items <span class="muted" id="fc-count"></span></h3>
+            <div class="toolbar-actions">
+              <button class="btn btn-ghost btn-sm" data-action="fc-add" type="button">+ Row</button>
+              <button class="btn btn-ghost btn-sm" data-action="fc-clear" type="button">Clear</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="data edit" id="fc-input">
+              <thead><tr><th class="num">Pieces</th><th class="num" id="fc-h-l">Length</th><th class="num" id="fc-h-w">Width</th><th class="num" id="fc-h-h">Height</th><th class="num" id="fc-h-wt">Weight</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="fc-result" id="fc-result"></div>
+
+        <div class="toolbar">
+          <h3 id="fc-title">Freight class calculation</h3>
+          <div class="toolbar-actions">
+            <button class="btn btn-secondary btn-sm" data-action="fc-image" type="button">Copy as image</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data" id="fc-table"><thead></thead><tbody></tbody><tfoot></tfoot></table>
         </div>
       </section>
     </section>

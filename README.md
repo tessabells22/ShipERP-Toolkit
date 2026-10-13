@@ -16,6 +16,8 @@ The sidebar has collapsible sections, each showing a one-line summary when close
 
 With **Convert to web-service UoM** switched on (the default), a second table shows every HU converted to the target UoM with the calculation under each value, configurable decimals and rounding, and optional dimensional / billable weight. Exports include both source and converted values.
 
+**3. Freight Calculator.** Estimates LTL freight class from density, like freightclasscalc.com: enter pieces, length, width, height and weight per line (inches/pounds or centimetres/kilograms; weight per piece or per line). Shows cubic feet, total weight, density (lb/ft³) and class per line and for the whole shipment, with the calculation under each value. Choose the classic 18-class density chart or the NMFC 13-tier density scale (2025); the matching tier is highlighted in the density chart. HUs can be pulled in from the Handling Units tab. "Copy as image" pastes the calculation into test evidence. Class is estimated from density only; commodities with a fixed NMFC class are not covered.
+
 **Seeds.** Every generated dataset shows a seed. Untick *New seed each run*, enter the seed from a test case, and the exact same data comes back.
 
 ## Running locally

@@ -376,3 +376,17 @@ table.edit .c-id { min-width: 90px; }
 .factors-box { border-top: 1px solid var(--line); margin-top: 6px; }
 .factors-box > summary { padding-bottom: 6px; }
 #cv-out { margin-top: 4px; }
+
+/* ---------- Freight calculator ---------- */
+.fc-result { display: grid; grid-template-columns: 1.3fr repeat(3, 1fr); gap: 10px; margin: 0 0 16px; }
+.fc-result:empty { display: none; }
+.fc-result > div { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; background: #fff; }
+.fc-result span { display: block; font-size: 12px; font-weight: 600; color: var(--muted); }
+.fc-result strong { display: block; font-size: 20px; font-weight: 700; color: var(--navy); }
+.fc-result .fc-class { background: var(--orange); border-color: var(--orange); }
+.fc-result .fc-class span { color: #fff; opacity: .9; }
+.fc-result .fc-class strong { color: #fff; font-size: 28px; line-height: 1.1; }
+table.chart { font-size: 12.5px; }
+table.chart td, table.chart th { padding: 4px 10px; }
+table.chart tr.hit td { background: #fff1e0 !important; color: var(--orange-dark); font-weight: 700; }
+@media (max-width: 640px) { .fc-result { grid-template-columns: 1fr 1fr; } }

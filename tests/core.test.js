@@ -147,3 +147,23 @@ test('special chars: every field except Customer # can be targeted', () => {
     assert.ok(!Core.segText(p.fields.customerNo).includes('#'));
   });
 });
+
+test('freight class: density and class lookup', () => {
+  // 48x40x48 in pallet, 500 lb: 53.333 ft3, 9.375 PCF
+  const out = Core.calcFreight([{ qty: 1, l: 48, w: 40, h: 48, weight: 500 }], { dUom: 'IN', wUom: 'LB', weightPer: 'piece', scale: 'classic' });
+  assert.equal(Core.roundTo(out.rows[0].cuFt, 3), 53.333);
+  assert.equal(Core.roundTo(out.totals.density, 3), 9.375);
+  assert.equal(out.totals.cls, '100');
+  assert.equal(Core.freightClass(9.375, 'nmfc2025'), '100');
+  // Boundaries take the lower class; extremes
+  assert.equal(Core.freightClass(15, 'classic'), '70');
+  assert.equal(Core.freightClass(14.99, 'classic'), '77.5');
+  assert.equal(Core.freightClass(0.5, 'classic'), '500');
+  assert.equal(Core.freightClass(60, 'classic'), '50');
+  assert.equal(Core.freightClass(0.5, 'nmfc2025'), '400');
+  // Quantity and per-line weight; metric input converts to the same answer
+  const two = Core.calcFreight([{ qty: 2, l: 48, w: 40, h: 48, weight: 1000 }], { dUom: 'IN', wUom: 'LB', weightPer: 'line', scale: 'classic' });
+  assert.equal(Core.roundTo(two.totals.density, 3), 9.375);
+  const metric = Core.calcFreight([{ qty: 1, l: 121.92, w: 101.6, h: 121.92, weight: 226.796185 }], { dUom: 'CM', wUom: 'KG', weightPer: 'piece', scale: 'classic' });
+  assert.equal(Core.roundTo(metric.totals.density, 3), 9.375);
+});
