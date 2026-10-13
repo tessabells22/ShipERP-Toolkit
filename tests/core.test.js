@@ -104,7 +104,7 @@ test('every city row is well-formed', () => {
 });
 
 test('HU generation respects ranges and mixed UoM', () => {
-  const hus = Gen.generateHUs(5, { count: 10, wUom: 'KG', dUom: 'CM', mixed: true, wMin: 1, wMax: 30, wDp: 2, dMin: 10, dMax: 100, dDp: 1, packaging: 'MIX', idPrefix: 'HU', idStart: '0001' });
+  const hus = Gen.generateHUs(5, { count: 10, wUom: 'KG', dUom: 'CM', mixed: true, wMin: 1, wMax: 30, wDp: 2, dMin: 10, dMax: 100, dDp: 1, idPrefix: 'HU', idStart: '0001' });
   assert.equal(hus.length, 10);
   assert.equal(hus[0].id, 'HU0001');
   hus.forEach(h => {

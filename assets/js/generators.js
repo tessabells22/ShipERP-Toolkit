@@ -180,9 +180,8 @@
     length: { IN: [4, 48], CM: [10, 120], MM: [100, 1200], M: [0.1, 1.2], FT: [0.5, 4] }
   };
   var MIX_PAIRS = [['LB', 'IN'], ['KG', 'CM']];
-  var PACKAGING = ['CTN', 'BOX', 'PLT', 'CRT', 'BAG'];
 
-  /* opts: { count, wUom, dUom, mixed, wMin, wMax, wDp, dMin, dMax, dDp, identical, packaging, idPrefix, idStart } */
+  /* opts: { count, wUom, dUom, mixed, wMin, wMax, wDp, dMin, dMax, dDp, identical, idPrefix, idStart } */
   function generateHUs(seed, opts) {
     var rng = Core.createRng(seed);
     var hus = [];
@@ -200,8 +199,7 @@
           l: rng.float(opts.dMin, opts.dMax, opts.dDp),
           w: rng.float(opts.dMin, opts.dMax, opts.dDp),
           h: rng.float(opts.dMin, opts.dMax, opts.dDp),
-          wUom: opts.wUom, dUom: opts.dUom,
-          pkg: opts.packaging === 'MIX' ? rng.pick(PACKAGING) : opts.packaging
+          wUom: opts.wUom, dUom: opts.dUom
         };
         if (opts.mixed) {
           // Generate in the chosen UoM, then express this HU in a random UoM pair
@@ -229,6 +227,6 @@
   return {
     FIELDS: FIELDS, FIELD_LABELS: FIELD_LABELS, INJECTABLE: INJECTABLE, PARTNERS: PARTNERS,
     generateAddressSets: generateAddressSets, flatten: flatten,
-    DEFAULT_RANGES: DEFAULT_RANGES, PACKAGING: PACKAGING, generateHUs: generateHUs
+    DEFAULT_RANGES: DEFAULT_RANGES, generateHUs: generateHUs
   };
 });

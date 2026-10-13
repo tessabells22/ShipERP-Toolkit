@@ -471,7 +471,7 @@
       wUom: $('#hu-wuom').value, dUom: $('#hu-duom').value, mixed: $('#hu-mixed').checked,
       wMin: wMin, wMax: wMax, wDp: Math.min(Math.max(parseInt($('#hu-wdp').value, 10) || 0, 0), 4),
       dMin: dMin, dMax: dMax, dDp: Math.min(Math.max(parseInt($('#hu-ddp').value, 10) || 0, 0), 4),
-      identical: $('#hu-identical').checked, packaging: $('#hu-pkg').value,
+      identical: $('#hu-identical').checked,
       idPrefix: $('#hu-idprefix').value, idStart: $('#hu-idstart').value || '1'
     }));
   }
@@ -485,10 +485,9 @@
   }
 
   function addInputRow(h) {
-    h = h || { id: 'HU' + String($$('#cv-input tbody tr').length + 1).padStart(4, '0'), pkg: 'CTN', weight: '', wUom: $('#hu-wuom').value, l: '', w: '', h: '', dUom: $('#hu-duom').value };
+    h = h || { id: 'HU' + String($$('#cv-input tbody tr').length + 1).padStart(4, '0'), weight: '', wUom: $('#hu-wuom').value, l: '', w: '', h: '', dUom: $('#hu-duom').value };
     var tr = document.createElement('tr');
     tr.innerHTML = '<td><input class="c-id" value="' + esc(h.id) + '"></td>' +
-      '<td><input class="c-pkg" value="' + esc(h.pkg || '') + '"></td>' +
       '<td><input class="c-w num" type="number" step="any" value="' + esc(h.weight) + '"></td>' +
       '<td>' + uomSelect('c-wu', wUoms, h.wUom) + '</td>' +
       '<td><input class="c-l num" type="number" step="any" value="' + esc(h.l) + '"></td>' +
@@ -508,7 +507,7 @@
   function readInputRows() {
     return $$('#cv-input tbody tr').map(function (tr) {
       return {
-        id: $('.c-id', tr).value, pkg: $('.c-pkg', tr).value,
+        id: $('.c-id', tr).value,
         weight: parseFloat($('.c-w', tr).value), wUom: $('.c-wu', tr).value,
         l: parseFloat($('.c-l', tr).value), w: parseFloat($('.c-wd', tr).value), h: parseFloat($('.c-h', tr).value),
         dUom: $('.c-du', tr).value
@@ -546,11 +545,11 @@
   function updateHuSummaries() {
     var mixed = $('#hu-mixed').checked;
     $('#sum-hu').textContent = (parseInt($('#hu-count').value, 10) || 1) + ' HUs · ' +
-      (mixed ? 'mixed LB/IN + KG/CM' : $('#hu-wuom').value + '/' + $('#hu-duom').value) + ' · ' + $('#hu-pkg').value;
+      (mixed ? 'mixed LB/IN + KG/CM' : $('#hu-wuom').value + '/' + $('#hu-duom').value);
     var o = convOpts();
     $('#acc-cv').classList.toggle('is-on', cvOn());
     $('#sum-cv').textContent = cvOn()
-      ? o.toW + '/' + o.toD + ' · ' + o.wDp + ' dp · ' + $('#cv-mode').selectedOptions[0].text.toLowerCase() + (o.dimWeight ? ' · dim wt' : '')
+      ? o.toW + '/' + o.toD + ' · ' + o.wDp + ' dp · ' + $('#cv-mode').selectedOptions[0].text.replace(/ \(.*/, '').toLowerCase() + (o.dimWeight ? ' · dim wt' : '')
       : 'Off';
     $('#cv-dim-opts').hidden = !o.dimWeight;
   }
@@ -563,7 +562,7 @@
     renderFactors();
     var seedTxt = huSeed ? ' · seed <code>' + huSeed + '</code>' : '';
     $('#hu-summary').innerHTML = src.length + ' HU' + (src.length === 1 ? '' : 's') + seedTxt +
-      (cvOn() && src.length ? ' · converted to ' + o.toW + '/' + o.toD + ', ' + $('#cv-mode').selectedOptions[0].text.toLowerCase() + ' rounding' : '');
+      (cvOn() && src.length ? ' · converted to ' + o.toW + '/' + o.toD + ', ' + $('#cv-mode').selectedOptions[0].text.replace(/ \(.*/, '').toLowerCase() + ' rounding' : '');
     $('#cv-out').hidden = !cvOn();
     if (!src.length) {
       conv = null;
@@ -610,16 +609,16 @@
   function huExportRows() {
     var src = readInputRows();
     if (!src.length) return [];
-    var head = ['HU', 'Packaging', 'Weight', 'Weight UoM', 'Length', 'Width', 'Height', 'Dim UoM'];
+    var head = ['HU', 'Weight', 'Weight UoM', 'Length', 'Width', 'Height', 'Dim UoM'];
     if (!cvOn()) {
-      return [head].concat(src.map(function (h) { return [h.id, h.pkg, h.weight, h.wUom, h.l, h.w, h.h, h.dUom]; }));
+      return [head].concat(src.map(function (h) { return [h.id, h.weight, h.wUom, h.l, h.w, h.h, h.dUom]; }));
     }
     var o = convOpts();
     head = head.concat(['Weight (' + o.toW + ')', 'Length (' + o.toD + ')', 'Width (' + o.toD + ')', 'Height (' + o.toD + ')', 'Weight factor', 'Dim factor']);
     if (o.dimWeight) head.push('Dim weight (' + o.toW + ')', 'Billable (' + o.toW + ')');
     return [head].concat(conv.rows.map(function (r) {
       var s = r.src;
-      var row = [r.id, s.pkg, s.weight, s.wUom, s.l, s.w, s.h, s.dUom, Core.fmt(r.weight, o.wDp)]
+      var row = [r.id, s.weight, s.wUom, s.l, s.w, s.h, s.dUom, Core.fmt(r.weight, o.wDp)]
         .concat(r.dims.map(function (d) { return Core.fmt(d.value, o.dDp); }))
         .concat([Core.factorText(r.wFactor), Core.factorText(r.dFactor)]);
       if (o.dimWeight) row.push(Core.fmt(r.dimWeight, o.wDp), Core.fmt(r.billable, o.wDp));
@@ -661,7 +660,7 @@
       if (isNaN(w)) return; // header row
       var wu = c[2].toUpperCase(), du = c[6].toUpperCase();
       if (!(wu in Core.WEIGHT) || !(du in Core.LENGTH)) return;
-      out.push({ id: c[0], pkg: '', weight: w, wUom: wu, l: parseFloat(c[3]), w: parseFloat(c[4]), h: parseFloat(c[5]), dUom: du });
+      out.push({ id: c[0], weight: w, wUom: wu, l: parseFloat(c[3]), w: parseFloat(c[4]), h: parseFloat(c[5]), dUom: du });
     });
     return out;
   }

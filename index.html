@@ -194,9 +194,6 @@
           <div class="acc-body">
             <div class="row-2">
               <label class="field"><span>Number of HUs</span><input type="number" id="hu-count" min="1" max="200" value="10"></label>
-              <label class="field"><span>Packaging</span>
-                <select id="hu-pkg"><option value="CTN">CTN (carton)</option><option value="BOX">BOX</option><option value="PLT">PLT (pallet)</option><option value="CRT">CRT (crate)</option><option value="MIX">Mixed</option></select>
-              </label>
             </div>
             <div class="row-2">
               <label class="field"><span>Weight UoM</span><select id="hu-wuom"></select></label>
@@ -239,18 +236,19 @@
               <label class="field"><span>Weight UoM</span><select id="cv-tow"></select></label>
               <label class="field"><span>Dimension UoM</span><select id="cv-tod"></select></label>
             </div>
-            <div class="row-3">
-              <label class="field"><span>Weight dp</span><input type="number" id="cv-wdp" min="0" max="6" value="2"></label>
-              <label class="field"><span>Dim dp</span><input type="number" id="cv-ddp" min="0" max="6" value="2"></label>
-              <label class="field"><span>Rounding</span>
+            <div class="row-2">
+              <label class="field" title="Decimal places for converted weights, e.g. 2 gives 22.05"><span>Weight decimals</span><input type="number" id="cv-wdp" min="0" max="6" value="2"></label>
+              <label class="field" title="Decimal places for converted length, width and height"><span>Dim decimals</span><input type="number" id="cv-ddp" min="0" max="6" value="2"></label>
+            </div>
+            <label class="field" title="How the last decimal is rounded"><span>Rounding</span>
                 <select id="cv-mode">
-                  <option value="half-up">Half up</option>
-                  <option value="up">Always up</option>
-                  <option value="down">Truncate</option>
-                  <option value="half-even">Half even</option>
+                  <option value="half-up">Half up (22.055 → 22.06)</option>
+                  <option value="up">Always up (22.051 → 22.06)</option>
+                  <option value="down">Truncate (22.059 → 22.05)</option>
+                  <option value="half-even">Half even (22.055 → 22.06, 22.045 → 22.04)</option>
                 </select>
               </label>
-            </div>
+
             <label class="check"><input type="checkbox" id="cv-formula" checked> Show calculation for each value</label>
             <label class="check"><input type="checkbox" id="cv-dim"> Dim weight and billable weight</label>
             <div class="row-2" id="cv-dim-opts" hidden>
@@ -301,7 +299,7 @@
           </div>
           <div class="table-wrap">
             <table class="data edit" id="cv-input">
-              <thead><tr><th>HU</th><th>Pkg</th><th class="num">Weight</th><th>UoM</th><th class="num">Length</th><th class="num">Width</th><th class="num">Height</th><th>UoM</th><th></th></tr></thead>
+              <thead><tr><th>HU</th><th class="num">Weight</th><th>UoM</th><th class="num">Length</th><th class="num">Width</th><th class="num">Height</th><th>UoM</th><th></th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
