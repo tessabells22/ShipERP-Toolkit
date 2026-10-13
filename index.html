@@ -142,6 +142,13 @@
             </button>
           </div>
           <div class="acc-body">
+            <label class="field"><span>Field length</span>
+              <select id="af-length">
+                <option value="normal">Normal</option>
+                <option value="max">Exactly at SAP limit (e.g. Name = 40)</option>
+                <option value="over">1 over SAP limit (e.g. Name = 41)</option>
+              </select>
+            </label>
             <label class="field"><span>House number</span>
               <select id="af-house"><option value="separate">Separate House Num field</option><option value="inline">Inside Addr 1</option></select>
             </label>
@@ -171,6 +178,7 @@
         <div class="toolbar">
           <div class="toolbar-info" id="af-summary"></div>
           <div class="toolbar-actions">
+            <button class="btn btn-ghost" data-action="copy-link" data-tab-id="addr" type="button" title="Link that recreates exactly this data">Copy link</button>
             <button class="btn btn-ghost" data-action="af-tsv" type="button">Copy for Excel</button>
             <button class="btn btn-ghost" data-action="af-json" type="button">Copy JSON</button>
             <button class="btn btn-secondary" data-action="af-csv" type="button">Download CSV</button>
@@ -199,7 +207,17 @@
               <label class="field"><span>Weight UoM</span><select id="hu-wuom"></select></label>
               <label class="field"><span>Dimension UoM</span><select id="hu-duom"></select></label>
             </div>
-            <label class="check"><input type="checkbox" id="hu-mixed"> Mix LB/IN and KG/CM across HUs</label>
+            <label class="field"><span>Values</span>
+              <select id="hu-edge">
+                <option value="random">Random within range</option>
+                <option value="boundary">Edge: near rounding boundary</option>
+                <option value="min">Edge: minimum values (0.01 / 0.1)</option>
+                <option value="max">Edge: maximum of range</option>
+                <option value="dimeq">Edge: dim weight = actual weight</option>
+              </select>
+            </label>
+            <p class="hint" id="hu-edge-hint" hidden></p>
+            <label class="check" id="hu-mixed-wrap"><input type="checkbox" id="hu-mixed"> Mix LB/IN and KG/CM across HUs</label>
             <div class="field">
               <span>Weight</span>
               <div class="row-3">
@@ -275,6 +293,7 @@
         <div class="toolbar">
           <div class="toolbar-info" id="hu-summary"></div>
           <div class="toolbar-actions">
+            <button class="btn btn-ghost" data-action="copy-link" data-tab-id="hu" type="button" title="Link that recreates exactly this data">Copy link</button>
             <button class="btn btn-ghost" data-action="hu-tsv" type="button">Copy for Excel</button>
             <button class="btn btn-ghost" data-action="hu-json" type="button">Copy JSON</button>
             <button class="btn btn-secondary" data-action="hu-csv" type="button">Download CSV</button>
@@ -367,6 +386,7 @@
           <div class="acc-body"><table class="data chart" id="fc-chart"><thead><tr><th class="num">Density (lb/ft³)</th><th class="num">Class</th></tr></thead><tbody></tbody></table></div>
         </section>
         <div class="controls-foot">
+          <button class="btn btn-ghost btn-block" data-action="fc-boundary" type="button">Edge: load class-boundary lines</button>
           <button class="btn btn-ghost btn-block" data-action="fc-from-hu" type="button">Use HUs from Handling Units tab</button>
         </div>
       </aside>
@@ -375,6 +395,7 @@
         <div class="toolbar">
           <div class="toolbar-info" id="fc-summary"></div>
           <div class="toolbar-actions">
+            <button class="btn btn-ghost" data-action="copy-link" data-tab-id="fc" type="button" title="Link that recreates exactly this data">Copy link</button>
             <button class="btn btn-ghost" data-action="fc-tsv" type="button">Copy for Excel</button>
             <button class="btn btn-secondary" data-action="fc-csv" type="button">Download CSV</button>
           </div>

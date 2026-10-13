@@ -18,6 +18,13 @@ With **Convert to web-service UoM** switched on (the default), a second table sh
 
 **3. Freight Calculator.** Estimates LTL freight class from density, like freightclasscalc.com: enter pieces, length, width, height and weight per line (dimension unit IN, FT, YD, CM, MM, M or a custom unit; weight unit LB, OZ, KG, G, metric tonnes or a custom unit; weight per piece or per line). Shows cubic feet, total weight, density (lb/ft³) and class per line and for the whole shipment, with the calculation under each value. Choose the classic 18-class density chart or the NMFC 13-tier density scale (2025); the matching tier is highlighted in the density chart. HUs can be pulled in from the Handling Units tab. "Copy as image" pastes the calculation into test evidence. Class is estimated from density only; commodities with a fixed NMFC class are not covered.
 
+**Edge cases.**
+- Addresses → Field options → *Field length*: fill free-text fields (Name, Attention, Addr 1–4, Suburb, City) to exactly the SAP limit, or one character over. Inserted special characters count toward the length.
+- Handling Units → *Values*: near a rounding boundary (converted values land on a half-step such as 22.045), minimum values (0.01 / 0.1, which may convert to 0), maximum of range, or dim weight = actual weight.
+- Freight Calculator → *Edge: load class-boundary lines*: one line exactly on each density boundary and one 1 lb under it (48 × 36 × 48 in = exactly 48 ft³).
+
+**Shareable links.** *Copy link* on each tab copies a URL that reopens the tab with the same settings, seed and data (hand-edited HU rows and freight lines are stored in the link). The data lives in the part of the URL after `#`, which browsers never send to a server. A link reproduces data as of the toolkit version it was made with.
+
 **Seeds.** Every generated dataset shows a seed. Untick *New seed each run*, enter the seed from a test case, and the exact same data comes back.
 
 ## Running locally

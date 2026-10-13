@@ -12,10 +12,7 @@
   };
 
   // SAP address field lengths (ADRC / KNA1), used for the over-length warning
-  var MAX_LEN = {
-    name: 40, attention: 40, addr1: 60, houseNum: 10, supp: 10, addr2: 40, addr3: 40, addr4: 40,
-    suburb: 40, city: 40, region: 3, postcode: 10, country: 3, phone: 30, fax: 30, customerNo: 10, email: 241
-  };
+  var MAX_LEN = Gen.MAX_LEN;
 
   /* ---------- Shared helpers ---------- */
   var toastTimer;
@@ -359,7 +356,8 @@
     var fills = $$('input[name="af-fill"]');
     var filled = fills.filter(function (b) { return b.checked; }).length;
     $('#sum-fields').textContent = (filled === fills.length ? 'All optional fields filled' : filled + ' of ' + fills.length + ' optional filled') +
-      ($('#af-house').value === 'inline' ? ' · house no. in Addr 1' : '');
+      ($('#af-house').value === 'inline' ? ' · house no. in Addr 1' : '') +
+      ($('#af-length').value === 'max' ? ' · at SAP limit' : $('#af-length').value === 'over' ? ' · 1 over SAP limit' : '');
   }
   $('#panel-addr .controls').addEventListener('change', updateSummaries);
   $('#panel-addr .controls').addEventListener('input', updateSummaries);
@@ -396,6 +394,7 @@
       fillSupp: $('#af-supp').checked || picked('supp'),
       fillFax: $('#af-fax').checked || picked('fax'),
       custPrefix: $('#af-custprefix').value, custStart: $('#af-custstart').value || '001',
+      lengthMode: $('#af-length').value,
       special: sp
     });
     addrView.withInjected = spOn;
@@ -459,6 +458,24 @@
   applyDefaultRanges();
 
   var huSeed = null;
+  var huDirty = false; // true once rows are edited by hand, so a seed alone no longer recreates them
+
+  var EDGE_HINTS = {
+    boundary: 'Converted values land as close as possible to a rounding half-step (e.g. 22.045), where half up, half even and truncate give different answers.',
+    min: 'Smallest values the decimals allow. Converted weight or dims may round to 0.',
+    max: 'Every HU uses the top of the weight and dimension ranges.',
+    dimeq: 'Weight is set so actual weight equals dim weight after conversion (uses the divisor and target UoM).'
+  };
+  function syncEdge() {
+    var e = $('#hu-edge').value;
+    $('#hu-edge-hint').hidden = e === 'random';
+    $('#hu-edge-hint').textContent = EDGE_HINTS[e] || '';
+    // Edge values are tuned in one UoM, so mixing is turned off for them
+    $('#hu-mixed').disabled = e !== 'random';
+    $('#hu-mixed-wrap').classList.toggle('is-disabled', e !== 'random');
+    if (e === 'dimeq' && !$('#cv-dim').checked) { $('#cv-dim').checked = true; }
+  }
+  $('#hu-edge').addEventListener('change', syncEdge);
 
   function generateHUs() {
     var wMin = num('#hu-wmin', 1), wMax = num('#hu-wmax', 10);
@@ -472,8 +489,10 @@
       wMin: wMin, wMax: wMax, wDp: Math.min(Math.max(parseInt($('#hu-wdp').value, 10) || 0, 0), 4),
       dMin: dMin, dMax: dMax, dDp: Math.min(Math.max(parseInt($('#hu-ddp').value, 10) || 0, 0), 4),
       identical: $('#hu-identical').checked,
-      idPrefix: $('#hu-idprefix').value, idStart: $('#hu-idstart').value || '1'
+      idPrefix: $('#hu-idprefix').value, idStart: $('#hu-idstart').value || '1',
+      edge: $('#hu-edge').value, target: convOpts()
     }));
+    huDirty = false;
   }
   $('#hu-go').addEventListener('click', generateHUs);
 
@@ -545,7 +564,8 @@
   function updateHuSummaries() {
     var mixed = $('#hu-mixed').checked;
     $('#sum-hu').textContent = (parseInt($('#hu-count').value, 10) || 1) + ' HUs · ' +
-      (mixed ? 'mixed LB/IN + KG/CM' : $('#hu-wuom').value + '/' + $('#hu-duom').value);
+      (mixed && $('#hu-edge').value === 'random' ? 'mixed LB/IN + KG/CM' : $('#hu-wuom').value + '/' + $('#hu-duom').value) +
+      ($('#hu-edge').value !== 'random' ? ' · edge: ' + $('#hu-edge').selectedOptions[0].text.replace('Edge: ', '') : '');
     var o = convOpts();
     $('#acc-cv').classList.toggle('is-on', cvOn());
     $('#sum-cv').textContent = cvOn()
@@ -647,7 +667,10 @@
   $('#cv-enabled').addEventListener('change', function () {
     if (this.checked) setOpen(this.closest('.acc'), true);
   });
-  $('#panel-hu').addEventListener('input', function (e) { if (e.target.id !== 'cv-paste') renderConversion(); });
+  $('#panel-hu').addEventListener('input', function (e) {
+    if (e.target.closest('#cv-input')) huDirty = true;
+    if (e.target.id !== 'cv-paste') renderConversion();
+  });
   $('#panel-hu').addEventListener('change', function (e) { if (e.target.id !== 'cv-paste') renderConversion(); });
 
   function parsePasted(text) {
@@ -777,6 +800,75 @@
   $('#panel-fc').addEventListener('input', renderFreight);
   $('#panel-fc').addEventListener('change', renderFreight);
 
+  /* ---------- Shareable links ----------
+   * The link carries the tab's sidebar settings and seed (plus rows a seed can't recreate)
+   * in the URL hash, so it never reaches a server and reopens the exact same data. */
+  var LINK_PANELS = { addr: '#panel-addr', hu: '#panel-hu', fc: '#panel-fc' };
+  var LINK_SKIP = { 'sc-ms-input': 1 };
+  var AUTOSEED = { addr: 'af-autoseed', hu: 'hu-autoseed' };
+
+  function readControls(tab) {
+    var st = {};
+    $$(LINK_PANELS[tab] + ' .controls input, ' + LINK_PANELS[tab] + ' .controls select').forEach(function (el) {
+      if (LINK_SKIP[el.id]) return;
+      var key = el.id || (el.name ? el.name + '=' + el.value : '');
+      if (!key) return;
+      st[key] = el.type === 'checkbox' ? (el.checked ? 1 : 0) : el.value;
+    });
+    if (AUTOSEED[tab]) st[AUTOSEED[tab]] = 0; // a link must reuse its seed
+    return st;
+  }
+
+  function writeControls(c) {
+    Object.keys(c).forEach(function (key) {
+      var el = key.indexOf('=') > 0
+        ? $('input[name="' + key.split('=')[0] + '"][value="' + key.slice(key.indexOf('=') + 1).replace(/"/g, '\\"') + '"]')
+        : document.getElementById(key);
+      if (!el) return;
+      if (el.type === 'checkbox') el.checked = !!c[key]; else el.value = c[key];
+    });
+  }
+
+  function encodeState(obj) {
+    return btoa(unescape(encodeURIComponent(JSON.stringify(obj)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function decodeState(str) {
+    str = str.replace(/-/g, '+').replace(/_/g, '/');
+    while (str.length % 4) str += '=';
+    return JSON.parse(decodeURIComponent(escape(atob(str))));
+  }
+
+  function buildLink(tab) {
+    var st = { v: 1, tab: tab, c: readControls(tab) };
+    if (tab === 'addr') st.chars = scSelected.slice();
+    if (tab === 'hu' && (huDirty || !huSeed)) st.rows = readInputRows();
+    if (tab === 'fc') st.rows = fcReadRows();
+    return location.href.split('#')[0] + '#d=' + encodeState(st);
+  }
+
+  function restoreFromLink() {
+    var m = location.hash.match(/^#d=([A-Za-z0-9_-]+)/);
+    if (!m) return;
+    var st;
+    try { st = decodeState(m[1]); } catch (e) { toast('This link is damaged and could not be opened'); return; }
+    if (!st || !LINK_PANELS[st.tab]) return;
+    writeControls(st.c || {});
+    showTab(st.tab);
+    if (st.tab === 'addr') {
+      if (st.chars) scSelected = st.chars;
+      renderMultiSelect();
+      if ($('#sp-enabled').checked) setOpen($('#sp-enabled').closest('.acc'), true);
+      updateSummaries();
+      generateAddresses();
+    } else if (st.tab === 'hu') {
+      syncEdge();
+      if (st.rows) { huSeed = null; setInputRows(st.rows); huDirty = true; } else generateHUs();
+    } else if (st.tab === 'fc') {
+      fcSetRows(st.rows || []);
+    }
+    toast('Opened shared data');
+  }
+
   /* ---------- Table → PNG (for pasting into test evidence) ---------- */
   // Draws the rendered table onto a canvas so the image matches the screen exactly.
   function tableToCanvas(table, title, subtitle) {
@@ -903,23 +995,42 @@
       var r = huExportRows(); if (!r.length) return toast('No HUs to export');
       download('handling-units' + (huSeed ? '-seed' + huSeed : '') + '-' + stamp() + '.csv', Core.toCSV(r));
     },
-    'cv-add': function () { addInputRow(); renderConversion(); var last = $$('#cv-input tbody tr').pop(); $('.c-w', last).focus(); },
+    'cv-add': function () { huDirty = true; addInputRow(); renderConversion(); var last = $$('#cv-input tbody tr').pop(); $('.c-w', last).focus(); },
     'cv-clear': function () { huSeed = null; setInputRows([]); },
     'cv-paste-toggle': function () { var b = $('#cv-paste-box'); b.hidden = !b.hidden; if (!b.hidden) $('#cv-paste').focus(); },
     'cv-import': function () {
       var rows = parsePasted($('#cv-paste').value);
       if (!rows.length) return toast('No valid rows found');
-      huSeed = null;
+      huSeed = null; huDirty = true;
       setInputRows(rows);
       $('#cv-paste').value = ''; $('#cv-paste-box').hidden = true;
       toast('Imported ' + rows.length + ' rows');
     },
-    'cv-del': function (btn) { btn.closest('tr').remove(); renderConversion(); },
+    'cv-del': function (btn) { huDirty = true; btn.closest('tr').remove(); renderConversion(); },
     'fc-add': function () { fcAddRow(); renderFreight(); $('.f-l', $$('#fc-input tbody tr').pop()).focus(); },
     'fc-clear': function () { fcSetRows([]); fcAddRow(); },
     'fc-del': function (btn) { btn.closest('tr').remove(); renderFreight(); },
     'fc-tsv': function () { var r = fcRows(); if (!r.length) return toast('Nothing to copy'); copy(Core.toTSV(r), 'Copied ' + (r.length - 2) + ' lines'); },
     'fc-csv': function () { var r = fcRows(); if (!r.length) return toast('Nothing to export'); download('freight-class-' + stamp() + '.csv', Core.toCSV(r)); },
+    'copy-link': function (btn) {
+      var tab = btn.dataset.tabId;
+      if (tab === 'addr' && !addrView.sets.length) return toast('Generate addresses first');
+      var url = buildLink(tab);
+      copy(url, 'Link copied. It reopens exactly this data');
+    },
+    'fc-boundary': function () {
+      // 48 x 36 x 48 in = exactly 48 ft³, so weight = density × 48 gives exact densities.
+      // One line exactly on each tier boundary, one line 1 lb under it.
+      $('#fc-dunit').value = 'IN'; $('#fc-wunit').value = 'LB'; $('#fc-weightper').value = 'piece';
+      var tiers = Core.FREIGHT_SCALES[$('#fc-scale').value].tiers.filter(function (t) { return t[0] > 0; });
+      var lines = [];
+      tiers.forEach(function (t) {
+        lines.push({ qty: 1, l: 48, w: 36, h: 48, weight: Core.roundTo(t[0] * 48, 2) });
+        lines.push({ qty: 1, l: 48, w: 36, h: 48, weight: Core.roundTo(t[0] * 48 - 1, 2) });
+      });
+      fcSetRows(lines);
+      toast('Loaded ' + lines.length + ' lines: each class boundary and 1 lb under it');
+    },
     'fc-from-hu': function () {
       var hus = readInputRows();
       if (!hus.length) return toast('No HUs on the Handling Units tab');
@@ -957,6 +1068,7 @@
   /* ---------- Init ---------- */
   renderMultiSelect();
   updateSummaries();
+  syncEdge();
   generateAddresses();
   generateHUs();
   fcSetRows([{ qty: 1, l: 48, w: 40, h: 48, weight: 500 }]);
@@ -964,4 +1076,5 @@
     var saved = localStorage.getItem('qa-toolkit-tab');
     if (saved && $('#panel-' + saved)) showTab(saved);
   } catch (e) { /* ignore */ }
+  restoreFromLink();
 })();

@@ -175,3 +175,38 @@ test('freight: unit factor overrides (yards, tonnes, custom)', () => {
   assert.equal(Core.roundTo(out.totals.density, 3), 9.375);
   assert.equal(out.totals.cls, '100');
 });
+
+test('address length edge cases hit the SAP limit exactly (or +1), special chars included', () => {
+  const base = { count: 2, from: 'US', to: 'MX', forceIntl: true, partners: [], nameStyle: 'mixed', houseSeparate: true,
+    fillAddr2: true, fillAddr34: true, fillSuburb: true, forceSuburb: true, custPrefix: 'C', custStart: '001' };
+  const sp = { enabled: true, chars: ['#', '$'], positions: ['end'], fields: ['addr1', 'city'], apply: 'both', perField: 2, together: true };
+  ['max', 'over'].forEach(mode => {
+    const sets = Gen.generateAddressSets(5, Object.assign({}, base, { lengthMode: mode, special: sp }));
+    const extra = mode === 'over' ? 1 : 0;
+    sets.forEach(set => set.partners.forEach(p => Gen.LENGTH_FIELDS.forEach(f => {
+      const v = Core.segText(p.fields[f]);
+      if (v) assert.equal(Array.from(v).length, Gen.MAX_LEN[f] + extra, mode + ' ' + f + ': ' + v);
+      assert.ok(!/\s$/.test(v));
+    })));
+  });
+});
+
+test('HU edge values', () => {
+  const base = { count: 5, wUom: 'KG', dUom: 'CM', wMin: 1, wMax: 30, wDp: 2, dMin: 10, dMax: 100, dDp: 1, idPrefix: 'HU', idStart: '1',
+    target: { toW: 'LB', toD: 'IN', wDp: 2, dDp: 2, divisor: 139, roundDimsUp: true, mode: 'half-up' } };
+  const min = Gen.generateHUs(1, Object.assign({}, base, { edge: 'min' }));
+  assert.equal(min[0].weight, 0.01); assert.equal(min[0].l, 0.1);
+  const max = Gen.generateHUs(1, Object.assign({}, base, { edge: 'max' }));
+  assert.equal(max[0].weight, 30); assert.equal(max[0].h, 100);
+  // Boundary: converted weight sits near a .xx5 half-step
+  Gen.generateHUs(2, Object.assign({}, base, { edge: 'boundary' })).forEach(h => {
+    const x = Core.convertWeight(h.weight, 'KG', 'LB') * 100;
+    assert.ok(Math.abs(x - Math.floor(x) - 0.5) < 0.05, String(x));
+  });
+  // Dim weight ~= actual weight once converted
+  Gen.generateHUs(3, Object.assign({}, base, { edge: 'dimeq' })).forEach(h => {
+    const out = Core.convertHUs([h], { toW: 'LB', toD: 'IN', wDp: 2, dDp: 2, mode: 'half-up', dimWeight: true, divisor: 139, roundDimsUp: true });
+    const r = out.rows[0];
+    assert.ok(Math.abs(r.weight - r.dimWeight) <= 0.03, r.weight + ' vs ' + r.dimWeight);
+  });
+});

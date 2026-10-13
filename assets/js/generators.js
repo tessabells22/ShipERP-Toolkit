@@ -18,6 +18,31 @@
     region: 'State', postcode: 'PostCode', country: 'Ctry', phone: 'Phone', fax: 'Fax',
     customerNo: 'Customer #', email: 'Email'
   };
+  // SAP address field lengths (ADRC / KNA1)
+  var MAX_LEN = {
+    name: 40, attention: 40, addr1: 60, houseNum: 10, supp: 10, addr2: 40, addr3: 40, addr4: 40,
+    suburb: 40, city: 40, region: 3, postcode: 10, country: 3, phone: 30, fax: 30, customerNo: 10, email: 241
+  };
+  // Free-text fields the length edge cases apply to
+  var LENGTH_FIELDS = ['name', 'attention', 'addr1', 'addr2', 'addr3', 'addr4', 'suburb', 'city'];
+  var FILLER = ['Logistics', 'Center', 'North', 'Annex', 'Industrial', 'Park', 'Building', 'Distribution', 'Warehouse', 'Terminal'];
+
+  // Pad (or cut) text to exactly `target` characters with realistic words
+  function fitLength(rng, text, target) {
+    var out = text;
+    while (Array.from(out).length < target) out += ' ' + rng.pick(FILLER);
+    out = Array.from(out).slice(0, target).join('');
+    if (/\s$/.test(out)) out = out.slice(0, -1) + 'X';
+    return out;
+  }
+
+  function partnerHit(sp, pid) {
+    return sp.apply === 'all' ||
+      (sp.apply === 'both' && (pid === 'shipFrom' || pid === 'shipTo')) ||
+      (sp.apply === 'from' && pid === 'shipFrom') ||
+      (sp.apply === 'to' && pid === 'shipTo');
+  }
+
   // Fields that can receive special characters
   var INJECTABLE = FIELDS.filter(function (f) { return f !== 'customerNo'; });
 
@@ -120,6 +145,17 @@
         var cc = p.side === 'from' ? from : to;
         var custNo = p.id === 'shipFrom' ? '' : (opts.custPrefix || '') + String(cust++).padStart(custWidth, '0');
         var plain = genAddress(rng, cc, p.id, opts, custNo);
+        // Length edge cases: land each free-text field exactly on the SAP limit (or one over),
+        // leaving room for the special characters that will be inserted afterwards.
+        if (opts.lengthMode === 'max' || opts.lengthMode === 'over') {
+          var sp = opts.special;
+          LENGTH_FIELDS.forEach(function (f) {
+            if (!plain[f]) return;
+            var injected = sp && sp.enabled && sp.fields.indexOf(f) >= 0 && partnerHit(sp, p.id) ? Math.max(1, sp.perField || 1) : 0;
+            var target = MAX_LEN[f] + (opts.lengthMode === 'over' ? 1 : 0) - injected;
+            if (target > 0) plain[f] = fitLength(rng, plain[f], target);
+          });
+        }
         var segs = {};
         FIELDS.forEach(function (f) { segs[f] = Core.toSegments(plain[f]); });
         set.partners.push({ id: p.id, label: p.label, country: cc, fields: segs });
@@ -148,11 +184,7 @@
       return queue.shift();
     }
     set.partners.forEach(function (p) {
-      var hit = sp.apply === 'all' ||
-        (sp.apply === 'both' && (p.id === 'shipFrom' || p.id === 'shipTo')) ||
-        (sp.apply === 'from' && p.id === 'shipFrom') ||
-        (sp.apply === 'to' && p.id === 'shipTo');
-      if (!hit) return;
+      if (!partnerHit(sp, p.id)) return;
       sp.fields.forEach(function (f) {
         if (!Core.segText(p.fields[f])) return;
         var n = Math.max(1, sp.perField || 1);
@@ -181,7 +213,53 @@
   };
   var MIX_PAIRS = [['LB', 'IN'], ['KG', 'CM']];
 
-  /* opts: { count, wUom, dUom, mixed, wMin, wMax, wDp, dMin, dMax, dDp, identical, idPrefix, idStart } */
+  /* Edge-case values. opts.edge:
+   *   'boundary' - values whose converted result lands as close as possible to a rounding
+   *                half-step (e.g. 22.045), where half-up, half-even and truncate disagree
+   *   'min'      - the smallest value the decimals allow (0.01 / 0.1), which can round to 0
+   *   'max'      - the top of each range
+   *   'dimeq'    - weight set so actual weight equals dim weight in the target UoM
+   * opts.target: { toW, toD, wDp, dDp, divisor, roundDimsUp } (the conversion settings) */
+  function nearHalf(rng, min, max, dp, convert, tDp) {
+    var best = null, bestGap = Infinity;
+    for (var i = 0; i < 400; i++) {
+      var c = rng.float(min, max, dp);
+      var x = convert(c) * Math.pow(10, tDp);
+      var gap = Math.abs(x - Math.floor(x) - 0.5);
+      if (gap < bestGap) { best = c; bestGap = gap; }
+    }
+    return best;
+  }
+
+  function edgeHU(rng, opts) {
+    var e = opts.edge, t = opts.target || {};
+    var hu = { wUom: opts.wUom, dUom: opts.dUom };
+    var tw = t.wDp != null ? t.wDp : 2, td = t.dDp != null ? t.dDp : 2;
+    var cw = function (v) { return Core.convertWeight(v, opts.wUom, t.toW || opts.wUom); };
+    var cd = function (v) { return Core.convertLength(v, opts.dUom, t.toD || opts.dUom); };
+    if (e === 'boundary') {
+      hu.weight = nearHalf(rng, opts.wMin, opts.wMax, opts.wDp, cw, tw);
+      ['l', 'w', 'h'].forEach(function (k) { hu[k] = nearHalf(rng, opts.dMin, opts.dMax, opts.dDp, cd, td); });
+    } else if (e === 'min') {
+      hu.weight = Math.pow(10, -opts.wDp);
+      hu.l = hu.w = hu.h = Math.pow(10, -opts.dDp);
+    } else if (e === 'max') {
+      hu.weight = opts.wMax; hu.l = opts.dMax; hu.w = opts.dMax; hu.h = opts.dMax;
+    } else if (e === 'dimeq') {
+      ['l', 'w', 'h'].forEach(function (k) { hu[k] = rng.float(opts.dMin, opts.dMax, opts.dDp); });
+      var dims = ['l', 'w', 'h'].map(function (k) {
+        var v = Core.roundTo(cd(hu[k]), td, t.mode || 'half-up');
+        return t.roundDimsUp ? Math.ceil(v) : v;
+      });
+      var dimWeight = dims[0] * dims[1] * dims[2] / (t.divisor || 139);
+      hu.weight = Math.max(Core.roundTo(Core.convertWeight(dimWeight, t.toW || opts.wUom, opts.wUom), opts.wDp, 'half-up'), Math.pow(10, -opts.wDp));
+    } else {
+      return null;
+    }
+    return hu;
+  }
+
+  /* opts: { count, wUom, dUom, mixed, wMin, wMax, wDp, dMin, dMax, dDp, identical, idPrefix, idStart, edge, target } */
   function generateHUs(seed, opts) {
     var rng = Core.createRng(seed);
     var hus = [];
@@ -194,14 +272,14 @@
       if (opts.identical && template) {
         hu = Object.assign({}, template);
       } else {
-        hu = {
+        hu = edgeHU(rng, opts) || {
           weight: rng.float(opts.wMin, opts.wMax, opts.wDp),
           l: rng.float(opts.dMin, opts.dMax, opts.dDp),
           w: rng.float(opts.dMin, opts.dMax, opts.dDp),
           h: rng.float(opts.dMin, opts.dMax, opts.dDp),
           wUom: opts.wUom, dUom: opts.dUom
         };
-        if (opts.mixed) {
+        if (opts.mixed && !(opts.edge && opts.edge !== 'random')) {
           // Generate in the chosen UoM, then express this HU in a random UoM pair
           // so magnitudes stay realistic.
           var pair = rng.pick(MIX_PAIRS);
@@ -225,7 +303,7 @@
   }
 
   return {
-    FIELDS: FIELDS, FIELD_LABELS: FIELD_LABELS, INJECTABLE: INJECTABLE, PARTNERS: PARTNERS,
+    FIELDS: FIELDS, FIELD_LABELS: FIELD_LABELS, INJECTABLE: INJECTABLE, PARTNERS: PARTNERS, MAX_LEN: MAX_LEN, LENGTH_FIELDS: LENGTH_FIELDS,
     generateAddressSets: generateAddressSets, flatten: flatten,
     DEFAULT_RANGES: DEFAULT_RANGES, generateHUs: generateHUs
   };
