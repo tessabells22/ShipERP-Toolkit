@@ -358,10 +358,8 @@
       count: Math.min(Math.max(parseInt($('#sc-count').value, 10) || 1, 1), 50),
       from: $('#sc-from').value, to: $('#sc-to').value, forceIntl: $('#sc-intl').checked, partners: [],
       nameStyle: 'mixed', houseSeparate: true, fillAddr2: true,
-      // Fill optional fields that were picked, so there is a value to insert into
-      fillAddr34: fields.indexOf('addr3') >= 0 || fields.indexOf('addr4') >= 0,
-      fillSupp: fields.indexOf('supp') >= 0, fillFax: fields.indexOf('fax') >= 0,
-      fillSuburb: true, forceSuburb: fields.indexOf('suburb') >= 0,
+      // Every field gets a value so any of them can be tested
+      fillAddr34: true, fillSupp: true, fillFax: true, fillSuburb: true, forceSuburb: true,
       custPrefix: 'TSTCUS', custStart: '001', special: sp
     });
     scView.render();
