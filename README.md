@@ -1,1 +1,56 @@
-# ShipERP-Toolkit
+# ShipERP QA Toolkit
+
+Test data generator for the Carrier Compliance QA team. Static site: plain HTML/CSS/JS, no build step, no backend, no login. Everything runs in the browser.
+
+## What it does
+
+**1. Addresses.** Generates Ship From / Ship To pairs (plus optional Sold To, Importer, Ultimate Consignee) for any country combination, laid out like the ShipERP address screen. Click any value to copy it. 15 countries with real city / region / postal-code combinations so carrier address validation passes. Phone numbers use ranges reserved for fiction, emails use `example.com/.net/.org`.
+
+The sidebar has collapsible sections, each showing a one-line summary when closed:
+- **Shipment lane**: countries, quick lanes, number of test sets.
+- **Special characters** (switch on/off): pick characters from a multi-select dropdown, preloaded with the carrier table (/ERPIS/CHARS2) list; type anything not listed. Choose characters per field, together or apart, position (beginning / middle / end), which fields (every field except Customer #) and which partners. Every selected character is used before any repeats; the summary flags any that didn't fit. Exports gain an "Inserted characters" column.
+- **Partners & names**: extra partners, name style and prefix, Customer # numbering.
+- **Field options**: house number placement and which optional fields to fill.
+
+**2. Handling Units.** Generates N HUs with weights and dimensions in any UoM (LB, KG, G, OZ / IN, CM, MM, M, FT), configurable ranges and decimals, optionally mixing LB/IN and KG/CM in one shipment. The HU table is editable: change values, add rows, or paste from Excel.
+
+With **Convert to web-service UoM** switched on (the default), a second table shows every HU converted to the target UoM with the calculation under each value, configurable decimals and rounding, and optional dimensional / billable weight. Exports include both source and converted values.
+
+**3. Freight Calculator.** Estimates LTL freight class from density, like freightclasscalc.com: enter pieces, length, width, height and weight per line (dimension unit IN, FT, YD, CM, MM, M or a custom unit; weight unit LB, OZ, KG, G, metric tonnes or a custom unit; weight per piece or per line). Shows cubic feet, total weight, density (lb/ft³) and class per line and for the whole shipment, with the calculation under each value. Choose the classic 18-class density chart or the NMFC 13-tier density scale (2025); the matching tier is highlighted in the density chart. HUs can be pulled in from the Handling Units tab. "Copy as image" pastes the calculation into test evidence. Class is estimated from density only; commodities with a fixed NMFC class are not covered.
+
+**Edge cases.**
+- Addresses → Field options → *Field length*: fill free-text fields (Name, Attention, Addr 1–4, Suburb, City) to exactly the SAP limit, or one character over. Inserted special characters count toward the length.
+- Handling Units → *Values*: near a rounding boundary (converted values land on a half-step such as 22.045), minimum values (0.01 / 0.1, which may convert to 0), maximum of range, or dim weight = actual weight.
+
+**Shareable links.** *Copy link* on each tab copies a URL that reopens the tab with the same settings, seed and data (hand-edited HU rows and freight lines are stored in the link). The data lives in the part of the URL after `#`, which browsers never send to a server. A link reproduces data as of the toolkit version it was made with.
+
+**Seeds.** Every generated dataset shows a seed. Untick *New seed each run*, enter the seed from a test case, and the exact same data comes back.
+
+## Running locally
+
+Open `index.html` in a browser. That's it. `help.html` is the team guide (also linked as "How to use" in the top bar).
+
+Tests: `node --test tests/*.test.js`
+
+## Deploying for the team (GitHub Pages)
+
+The workflow in `.github/workflows/pages.yml` runs the tests and publishes the site on every push to `main`.
+
+1. Merge this branch into `main`.
+2. In the repo: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+3. The next push to `main` (or *Actions → Deploy to GitHub Pages → Run workflow*) publishes it at `https://<owner>.github.io/<repo>/`.
+
+GitHub Pages on a **private** repo needs a paid GitHub plan (Pro / Team / Enterprise). On a free account either make the repo public or use one of the alternatives below. Enterprise Cloud can restrict the Pages site to org members.
+
+**Alternatives** (no account needed by viewers):
+- **Cloudflare** (free, business use allowed): connect this repo in Workers & Pages. `wrangler.jsonc` serves the repo root as static assets (`.assetsignore` keeps tests and config out), so the default deploy command `npx wrangler deploy` works with no build command.
+- **Vercel**: Add New → Project → import this repo. `vercel.json` already sets *no build* and serves the repo root. The free Hobby plan is limited to non-commercial use.
+- **Netlify**: `netlify.toml` is included; connect the repo or drag the folder onto https://app.netlify.com/drop.
+- **Internal file share / SharePoint**: zip the folder; users open `index.html` directly.
+
+## Customising
+
+- Colors: CSS variables at the top of `assets/css/styles.css`.
+- Countries, cities, streets, phone formats: `assets/js/data.js`. Region codes follow SAP's default T005S values where those are standard; adjust if your system differs.
+- Character groups in the dropdown: `CHAR_SETS` in `assets/js/core.js` (the first group is preselected).
+- SAP field-length warnings: `MAX_LEN` in `assets/js/ui.js`.

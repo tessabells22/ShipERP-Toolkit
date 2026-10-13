@@ -1,0 +1,11 @@
+// Cloudflare Workers static-assets deploy (used by `npx wrangler deploy`).
+// The site has no build step: the repo root is served as-is, minus the files in .assetsignore.
+{
+  "name": "shiperp-qa-toolkit",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "."
+  },
+  // Non-production branches deploy with `wrangler preview`, which requires this block (it can stay empty)
+  "previews": {}
+}
