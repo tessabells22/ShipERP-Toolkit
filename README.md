@@ -28,7 +28,7 @@ With **Convert to web-service UoM** switched on (the default), a second table sh
 
 ## Running locally
 
-Open `index.html` in a browser. That's it.
+Open `index.html` in a browser. That's it. `help.html` is the team guide (also linked as "How to use" in the top bar).
 
 Tests: `node --test tests/*.test.js`
 
