@@ -46,7 +46,7 @@ h1, h2, h3 { font-family: var(--font-head); margin: 0; }
 .topbar { background: #fff; border-bottom: 1px solid var(--line); }
 .topbar-inner { display: flex; align-items: center; justify-content: space-between; height: 60px; gap: 12px; }
 .brand { display: flex; align-items: center; gap: 10px; color: var(--blue); text-decoration: none; }
-.brand-mark { width: 30px; height: 30px; color: var(--blue); }
+.brand-mark { width: 34px; height: 34px; display: block; }
 .brand-text { font-weight: 600; font-size: 18px; color: var(--blue); }
 .brand-text strong { font-weight: 700; color: var(--blue-dark); }
 
