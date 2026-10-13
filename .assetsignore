@@ -1,0 +1,10 @@
+.git
+.github
+tests
+node_modules
+README.md
+netlify.toml
+vercel.json
+wrangler.jsonc
+.assetsignore
+.nojekyll

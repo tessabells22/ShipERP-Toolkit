@@ -43,7 +43,7 @@ The workflow in `.github/workflows/pages.yml` runs the tests and publishes the s
 GitHub Pages on a **private** repo needs a paid GitHub plan (Pro / Team / Enterprise). On a free account either make the repo public or use one of the alternatives below. Enterprise Cloud can restrict the Pages site to org members.
 
 **Alternatives** (no account needed by viewers):
-- **Cloudflare Pages** (free, business use allowed): Workers & Pages → Create → Pages → Connect to Git → pick this repo. Framework preset *None*, build command empty, output directory `/`.
+- **Cloudflare** (free, business use allowed): connect this repo in Workers & Pages. `wrangler.jsonc` serves the repo root as static assets (`.assetsignore` keeps tests and config out), so the default deploy command `npx wrangler deploy` works with no build command.
 - **Vercel**: Add New → Project → import this repo. `vercel.json` already sets *no build* and serves the repo root. The free Hobby plan is limited to non-commercial use.
 - **Netlify**: `netlify.toml` is included; connect the repo or drag the folder onto https://app.netlify.com/drop.
 - **Internal file share / SharePoint**: zip the folder; users open `index.html` directly.
