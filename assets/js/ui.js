@@ -1018,19 +1018,6 @@
       var url = buildLink(tab);
       copy(url, 'Link copied. It reopens exactly this data');
     },
-    'fc-boundary': function () {
-      // 48 x 36 x 48 in = exactly 48 ft³, so weight = density × 48 gives exact densities.
-      // One line exactly on each tier boundary, one line 1 lb under it.
-      $('#fc-dunit').value = 'IN'; $('#fc-wunit').value = 'LB'; $('#fc-weightper').value = 'piece';
-      var tiers = Core.FREIGHT_SCALES[$('#fc-scale').value].tiers.filter(function (t) { return t[0] > 0; });
-      var lines = [];
-      tiers.forEach(function (t) {
-        lines.push({ qty: 1, l: 48, w: 36, h: 48, weight: Core.roundTo(t[0] * 48, 2) });
-        lines.push({ qty: 1, l: 48, w: 36, h: 48, weight: Core.roundTo(t[0] * 48 - 1, 2) });
-      });
-      fcSetRows(lines);
-      toast('Loaded ' + lines.length + ' lines: each class boundary and 1 lb under it');
-    },
     'fc-from-hu': function () {
       var hus = readInputRows();
       if (!hus.length) return toast('No HUs on the Handling Units tab');
