@@ -93,7 +93,7 @@
    *   count, from, to ('RANDOM' or ISO code), forceIntl, partners: [ids of optional partners],
    *   nameStyle, namePrefix, houseSeparate, fillSupp, fillAddr2, fillAddr34, fillSuburb, fillFax,
    *   custPrefix, custStart,
-   *   special: { enabled, chars[], positions[], fields[], apply: 'from'|'to'|'both'|'all', perField, mode: 'random'|'each' }
+   *   special: see applySpecialChars
    * } */
   function generateAddressSets(seed, opts) {
     var rng = Core.createRng(seed);
@@ -101,6 +101,7 @@
     var sets = [];
     var cust = Number(opts.custStart) || 1;
     var custWidth = String(opts.custStart || '1').length;
+    var charQueue = [];
 
     for (var i = 0; i < opts.count; i++) {
       var from = opts.from === 'RANDOM' ? rng.pick(codes) : opts.from;
@@ -123,14 +124,28 @@
         set.partners.push({ id: p.id, label: p.label, country: cc, fields: segs });
       });
 
-      applySpecialChars(rng, set, opts.special);
+      applySpecialChars(rng, set, opts.special, charQueue);
       sets.push(set);
     }
     return sets;
   }
 
-  function applySpecialChars(rng, set, sp) {
+  /* sp: { enabled, chars[], positions[], fields[], apply: 'from'|'to'|'both'|'all', perField, together }
+   * Characters are drawn from a shuffled queue that refills only when empty, so
+   * every selected character is used before any repeats (even coverage). */
+  function applySpecialChars(rng, set, sp, queue) {
     if (!sp || !sp.enabled || !sp.chars.length || !sp.positions.length || !sp.fields.length) return;
+    function nextChar() {
+      if (!queue.length) {
+        var fresh = sp.chars.slice();
+        for (var i = fresh.length - 1; i > 0; i--) {
+          var j = Math.floor(rng.next() * (i + 1));
+          var t = fresh[i]; fresh[i] = fresh[j]; fresh[j] = t;
+        }
+        Array.prototype.push.apply(queue, fresh);
+      }
+      return queue.shift();
+    }
     set.partners.forEach(function (p) {
       var hit = sp.apply === 'all' ||
         (sp.apply === 'both' && (p.id === 'shipFrom' || p.id === 'shipTo')) ||
@@ -139,12 +154,15 @@
       if (!hit) return;
       sp.fields.forEach(function (f) {
         if (!Core.segText(p.fields[f])) return;
-        var positions = sp.mode === 'each'
-          ? sp.positions.slice()
-          : Array.from({ length: sp.perField || 1 }, function () { return rng.pick(sp.positions); });
-        positions.forEach(function (pos) {
-          p.fields[f] = Core.injectSeg(p.fields[f], rng.pick(sp.chars), pos, rng);
-        });
+        var n = Math.max(1, sp.perField || 1);
+        var chars = Array.from({ length: n }, nextChar);
+        if (sp.together) {
+          p.fields[f] = Core.injectSeg(p.fields[f], chars.join(''), rng.pick(sp.positions), rng);
+        } else {
+          chars.forEach(function (ch) {
+            p.fields[f] = Core.injectSeg(p.fields[f], ch, rng.pick(sp.positions), rng);
+          });
+        }
       });
     });
   }

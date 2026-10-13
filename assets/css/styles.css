@@ -295,3 +295,44 @@ table.edit .c-id { min-width: 90px; }
   .fv.w-s, .fv.w-m { flex: 1 1 100px; }
   .toolbar-actions .btn { flex: 1 1 auto; }
 }
+
+/* ---------- Multi-select (special characters) ---------- */
+.ms { position: relative; }
+.ms-control {
+  display: flex; align-items: flex-start; gap: 6px;
+  min-height: 40px; padding: 5px 6px; background: #fff;
+  border: 1px solid var(--line); border-radius: 6px;
+}
+.ms-chips { flex: 1 1 auto; display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.ms-chip {
+  display: inline-flex; align-items: center; gap: 2px;
+  background: var(--blue-soft); color: var(--navy); border-radius: 4px;
+  padding: 1px 2px 1px 7px; font: 700 14px var(--font-mono);
+}
+.ms-chip button { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 0 4px; line-height: 1.4; }
+.ms-chip button:hover { color: var(--danger); }
+.ms-clear { border: 0; background: none; color: var(--blue); cursor: pointer; font: 600 12px var(--font-body); padding: 2px 4px; }
+.ms-placeholder { color: var(--muted); font-size: 13px; padding: 4px; }
+.ms-toggle {
+  flex: 0 0 auto; border: 1px solid var(--line); background: #fff; color: var(--blue);
+  border-radius: 4px; padding: 4px 10px; font: 600 12.5px var(--font-body); cursor: pointer; white-space: nowrap;
+}
+.ms-toggle:hover { border-color: var(--blue); }
+.ms-menu {
+  position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 30;
+  background: #fff; border: 1px solid var(--line); border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(20, 50, 80, .16); padding: 10px; max-height: 380px; overflow: auto;
+}
+.ms-group + .ms-group { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 8px; }
+.ms-group-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font: 700 11.5px var(--font-body); text-transform: uppercase; letter-spacing: .5px; color: var(--navy); }
+.ms-group-head button { border: 0; background: none; color: var(--blue); font: 600 12px var(--font-body); cursor: pointer; text-transform: none; letter-spacing: 0; }
+.ms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); gap: 4px; }
+.ms-opt {
+  height: 34px; border: 1px solid var(--line); background: #fff; border-radius: 4px;
+  font: 600 15px var(--font-mono); color: var(--ink); cursor: pointer;
+}
+.ms-opt:hover { border-color: var(--blue); }
+.ms-opt.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+.ms-add { display: flex; gap: 6px; margin-top: 6px; }
+.ms-add input { flex: 1 1 auto; }
+.warn-text { color: var(--orange-dark); font-weight: 600; }

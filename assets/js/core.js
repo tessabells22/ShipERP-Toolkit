@@ -139,17 +139,15 @@
   }
 
   /* ---------- Special characters ---------- */
+  // First group mirrors the carrier special-character table (/ERPIS/CHARS2) and is preselected.
   var CHAR_SETS = [
-    { id: 'punct', label: 'Common punctuation', chars: "# & - / . , ' ( ) : ; @ + % *" },
-    { id: 'xml', label: 'XML / HTML reserved', chars: '& < > " \'' },
-    { id: 'es', label: 'Spanish (MX / ES)', chars: 'á é í ó ú ñ Ñ ü ¿ ¡' },
-    { id: 'fr', label: 'French (FR / CA-QC)', chars: 'à â ç è é ê ë î ï ô ù û œ É' },
-    { id: 'de', label: 'German / Nordic', chars: 'ä ö ü ß Ä Ö Ü ø å æ' },
-    { id: 'pt', label: 'Portuguese (BR)', chars: 'ã õ á â ê ç Ã Ç' },
-    { id: 'sym', label: 'Symbols', chars: '° ± § © ® ™ € £ ¥ ½ ²' },
-    { id: 'ws', label: 'Whitespace edge cases', chars: '[SP] [NBSP] [TAB] [2SP]' },
-    { id: 'nonlatin', label: 'Non-Latin (CJK / Cyrillic / Greek)', chars: '東 京 中 文 Ж Ω' },
-    { id: 'quotes', label: 'Smart quotes & dashes', chars: '‘ ’ “ ” – — …' }
+    { id: 'carrier', label: 'Carrier table (/ERPIS/CHARS2)', chars: "# $ % & ' ( ) * < > @ ^" },
+    { id: 'punct', label: 'Other punctuation', chars: '! " + , - . / : ; = ? [ \\ ] _ ` { | } ~' },
+    { id: 'accent', label: 'Accented letters', chars: 'á é í ó ú ñ ü ç à è ê ô ö ä ß ø å Ñ É Ü' },
+    { id: 'sym', label: 'Symbols', chars: '° ± § © ® ™ € £ ¥ ½ ² ¿ ¡' },
+    { id: 'quotes', label: 'Smart quotes & dashes', chars: '‘ ’ “ ” – — …' },
+    { id: 'ws', label: 'Whitespace', chars: '[SP] [NBSP] [TAB]' },
+    { id: 'nonlatin', label: 'Non-Latin', chars: '東 京 中 文 Ж Ω' }
   ];
   var WS_TOKENS = { '[SP]': ' ', '[NBSP]': ' ', '[TAB]': '\t', '[2SP]': '  ' };
 

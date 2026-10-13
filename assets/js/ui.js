@@ -70,24 +70,6 @@
     }).join('');
   }
 
-  function charSetCheckboxes(container, name, defaults) {
-    container.innerHTML = Core.CHAR_SETS.map(function (s) {
-      return '<label class="check set"><input type="checkbox" name="' + name + '" value="' + s.id + '"' +
-        (defaults.indexOf(s.id) >= 0 ? ' checked' : '') + '> <span class="set-label">' + esc(s.label) +
-        '</span><code>' + esc(s.chars) + '</code></label>';
-    }).join('');
-  }
-
-  function selectedChars(name, customId) {
-    var chars = [];
-    checkedValues(name).forEach(function (id) {
-      var set = Core.CHAR_SETS.find(function (s) { return s.id === id; });
-      chars = chars.concat(Core.parseChars(set.chars));
-    });
-    chars = chars.concat(Core.parseChars($(customId).value));
-    return chars.filter(function (c, i) { return chars.indexOf(c) === i; });
-  }
-
   function seedFor(inputId, autoId) {
     var input = $(inputId);
     if ((autoId && $(autoId).checked) || !input.value) input.value = Core.newSeed();
@@ -111,75 +93,9 @@
   $$('.tab').forEach(function (t) { t.addEventListener('click', function () { showTab(t.dataset.tab); }); });
 
   /* =========================================================
-   * 1. Addresses
+   * Shared address view (used by the Addresses and Special Characters tabs)
    * ========================================================= */
   var countryOpts = Object.keys(Data.COUNTRIES).map(function (k) { return [k, k + ' – ' + Data.COUNTRIES[k].name]; });
-  fillSelect($('#af-from'), [['RANDOM', 'Random']].concat(countryOpts), 'US');
-  fillSelect($('#af-to'), [['RANDOM', 'Random']].concat(countryOpts), 'MX');
-
-  $('#lane-chips').innerHTML = Data.LANES.map(function (l) {
-    return '<button type="button" class="chip" data-from="' + l[0] + '" data-to="' + l[1] + '">' + l[0] + ' → ' + l[1] + '</button>';
-  }).join('') + '<button type="button" class="chip chip-accent" data-from="RANDOM" data-to="RANDOM">Random international</button>';
-  $('#lane-chips').addEventListener('click', function (e) {
-    var b = e.target.closest('.chip'); if (!b) return;
-    $('#af-from').value = b.dataset.from;
-    $('#af-to').value = b.dataset.to;
-    if (b.dataset.from === 'RANDOM') $('#af-intl').checked = true;
-    generateAddresses();
-  });
-  $('#af-swap').addEventListener('click', function () {
-    var f = $('#af-from').value; $('#af-from').value = $('#af-to').value; $('#af-to').value = f;
-  });
-
-  charSetCheckboxes($('#sp-sets'), 'sp-set', ['punct', 'es']);
-  $('#sp-fields').innerHTML = Gen.INJECTABLE.map(function (f) {
-    var on = ['name', 'addr1', 'city'].indexOf(f) >= 0;
-    return '<label class="check"><input type="checkbox" name="sp-field" value="' + f + '"' + (on ? ' checked' : '') + '> ' + Gen.FIELD_LABELS[f] + '</label>';
-  }).join('');
-
-  function syncSpecialState() {
-    var on = $('#sp-enabled').checked;
-    $('#sp-state').textContent = on ? 'on' : 'off';
-    $('#sp-state').classList.toggle('on', on);
-    $('#sp-per-wrap').hidden = $('#sp-mode').value === 'each';
-  }
-  $('#sp-enabled').addEventListener('change', syncSpecialState);
-  $('#sp-mode').addEventListener('change', syncSpecialState);
-
-  var addrSets = [];
-  var addrSeed = null;
-
-  function addressOptions() {
-    return {
-      count: Math.min(Math.max(parseInt($('#af-count').value, 10) || 1, 1), 50),
-      from: $('#af-from').value, to: $('#af-to').value, forceIntl: $('#af-intl').checked,
-      partners: checkedValues('af-partner'),
-      nameStyle: $('#af-namestyle').value, namePrefix: $('#af-nameprefix').value,
-      houseSeparate: $('#af-house').value === 'separate',
-      fillSupp: $('#af-supp').checked, fillAddr2: $('#af-addr2').checked, fillAddr34: $('#af-addr34').checked,
-      fillSuburb: $('#af-suburb').checked, fillFax: $('#af-fax').checked,
-      custPrefix: $('#af-custprefix').value, custStart: $('#af-custstart').value || '001',
-      special: {
-        enabled: $('#sp-enabled').checked,
-        chars: selectedChars('sp-set', '#sp-custom'),
-        positions: checkedValues('sp-pos'),
-        fields: checkedValues('sp-field'),
-        apply: $('#sp-apply').value,
-        mode: $('#sp-mode').value,
-        perField: Math.min(Math.max(parseInt($('#sp-per').value, 10) || 1, 1), 5)
-      }
-    };
-  }
-
-  function generateAddresses() {
-    var opts = addressOptions();
-    if (opts.special.enabled && (!opts.special.chars.length || !opts.special.positions.length || !opts.special.fields.length)) {
-      toast('Pick at least one character set, position and field');
-    }
-    addrSeed = seedFor('#af-seed', '#af-autoseed');
-    addrSets = Gen.generateAddressSets(addrSeed, opts);
-    renderAddresses();
-  }
 
   function fieldBtn(partner, f, extraClass) {
     var segs = partner.fields[f];
@@ -209,121 +125,249 @@
     return '<div class="sap-form">' + html + '</div>';
   }
 
-  function renderAddresses() {
-    var opts = addressOptions();
-    var summary = addrSets.length + ' test set' + (addrSets.length > 1 ? 's' : '') +
-      ' · seed <code>' + addrSeed + '</code>' + (opts.special.enabled ? ' · special chars on' : '');
-    $('#af-summary').innerHTML = summary;
-
-    $('#af-results').innerHTML = addrSets.map(function (set, si) {
-      var defaultTab = set.partners.findIndex(function (p) { return p.id === 'shipTo'; });
-      var tabs = set.partners.map(function (p, pi) {
-        return '<button type="button" class="sap-tab' + (pi === defaultTab ? ' is-active' : '') + '" data-set="' + si + '" data-p="' + pi + '">' + esc(p.label) + '</button>';
-      }).join('');
-      var panes = set.partners.map(function (p, pi) {
-        return '<div class="sap-pane" data-set="' + si + '" data-p="' + pi + '"' + (pi === defaultTab ? '' : ' hidden') + '>' + partnerForm(p) + '</div>';
-      }).join('');
-      return '<article class="set card">' +
-        '<header class="set-head"><div><span class="set-num">Set ' + set.index + '</span>' +
-        '<span class="lane-badge">' + set.from + ' <span>→</span> ' + set.to + '</span>' +
-        (set.from === set.to ? '<span class="pill">domestic</span>' : '<span class="pill on">international</span>') + '</div>' +
-        '<div class="set-actions"><button type="button" class="btn btn-ghost btn-sm" data-action="set-tsv" data-set="' + si + '">Copy partner</button>' +
-        '<button type="button" class="btn btn-ghost btn-sm" data-action="set-json" data-set="' + si + '">Copy set JSON</button></div></header>' +
-        '<div class="sap-tabs">' + tabs + '</div>' + panes + '</article>';
-    }).join('');
-  }
-
-  $('#af-results').addEventListener('click', function (e) {
-    var tab = e.target.closest('.sap-tab');
-    if (tab) {
-      var card = tab.closest('.set');
-      $$('.sap-tab', card).forEach(function (t) { t.classList.toggle('is-active', t === tab); });
-      $$('.sap-pane', card).forEach(function (p) { p.hidden = p.dataset.p !== tab.dataset.p; });
-      return;
-    }
-    var fv = e.target.closest('.fv');
-    if (fv) { if (fv.dataset.copy) copy(fv.dataset.copy, 'Copied ' + fv.title.split(':')[0]); return; }
-    var act = e.target.closest('[data-action]');
-    if (!act) return;
-    var set = addrSets[Number(act.dataset.set)];
-    if (act.dataset.action === 'set-json') copy(JSON.stringify(setToJson(set), null, 2), 'Set JSON copied');
-    if (act.dataset.action === 'set-tsv') {
-      var card2 = act.closest('.set');
-      var active = $('.sap-tab.is-active', card2);
-      var p = set.partners[Number(active.dataset.p)];
-      var flat = Gen.flatten(p);
-      copy(Core.toTSV(Gen.FIELDS.map(function (f) { return [Gen.FIELD_LABELS[f], flat[f]]; })), p.label + ' copied');
-    }
-  });
-
   function setToJson(set) {
     var o = { set: set.index, lane: set.from + '-' + set.to };
     set.partners.forEach(function (p) { o[p.id] = Gen.flatten(p); });
     return o;
   }
 
-  function addressRows() {
-    var rows = [['Set', 'Lane', 'Partner'].concat(Gen.FIELDS.map(function (f) { return Gen.FIELD_LABELS[f]; }))];
-    addrSets.forEach(function (set) {
-      set.partners.forEach(function (p) {
-        var flat = Gen.flatten(p);
-        rows.push([set.index, set.from + '-' + set.to, p.label].concat(Gen.FIELDS.map(function (f) { return flat[f]; })));
-      });
+  function injectedChars(p) {
+    var out = [];
+    Gen.FIELDS.forEach(function (f) {
+      p.fields[f].forEach(function (seg) { if (seg.inj) out.push(Gen.FIELD_LABELS[f] + ': ' + seg.t); });
     });
-    return rows;
+    return out.join(' | ');
   }
 
+  // One instance per tab: owns its sets, seed and result container.
+  function AddressView(container, defaultPartner, withInjected) {
+    var view = { sets: [], seed: null };
+
+    view.render = function () {
+      container.innerHTML = view.sets.map(function (set, si) {
+        var defaultTab = Math.max(0, set.partners.findIndex(function (p) { return p.id === defaultPartner; }));
+        var tabs = set.partners.map(function (p, pi) {
+          return '<button type="button" class="sap-tab' + (pi === defaultTab ? ' is-active' : '') + '" data-p="' + pi + '">' + esc(p.label) + '</button>';
+        }).join('');
+        var panes = set.partners.map(function (p, pi) {
+          return '<div class="sap-pane" data-p="' + pi + '"' + (pi === defaultTab ? '' : ' hidden') + '>' + partnerForm(p) + '</div>';
+        }).join('');
+        return '<article class="set card">' +
+          '<header class="set-head"><div><span class="set-num">Set ' + set.index + '</span>' +
+          '<span class="lane-badge">' + set.from + ' <span>→</span> ' + set.to + '</span>' +
+          (set.from === set.to ? '<span class="pill">domestic</span>' : '<span class="pill on">international</span>') + '</div>' +
+          '<div class="set-actions"><button type="button" class="btn btn-ghost btn-sm" data-set-action="tsv" data-set="' + si + '">Copy partner</button>' +
+          '<button type="button" class="btn btn-ghost btn-sm" data-set-action="json" data-set="' + si + '">Copy set JSON</button></div></header>' +
+          '<div class="sap-tabs">' + tabs + '</div>' + panes + '</article>';
+      }).join('');
+    };
+
+    view.rows = function () {
+      var head = ['Set', 'Lane', 'Partner'].concat(Gen.FIELDS.map(function (f) { return Gen.FIELD_LABELS[f]; }));
+      if (withInjected) head.push('Inserted characters');
+      var rows = [head];
+      view.sets.forEach(function (set) {
+        set.partners.forEach(function (p) {
+          var flat = Gen.flatten(p);
+          var r = [set.index, set.from + '-' + set.to, p.label].concat(Gen.FIELDS.map(function (f) { return flat[f]; }));
+          if (withInjected) r.push(injectedChars(p));
+          rows.push(r);
+        });
+      });
+      return rows;
+    };
+
+    view.json = function () {
+      return JSON.stringify({ seed: view.seed, sets: view.sets.map(setToJson) }, null, 2);
+    };
+
+    container.addEventListener('click', function (e) {
+      var tab = e.target.closest('.sap-tab');
+      if (tab) {
+        var card = tab.closest('.set');
+        $$('.sap-tab', card).forEach(function (t) { t.classList.toggle('is-active', t === tab); });
+        $$('.sap-pane', card).forEach(function (p) { p.hidden = p.dataset.p !== tab.dataset.p; });
+        return;
+      }
+      var fv = e.target.closest('.fv');
+      if (fv) { if (fv.dataset.copy) copy(fv.dataset.copy, 'Copied ' + fv.title.split(':')[0]); return; }
+      var act = e.target.closest('[data-set-action]');
+      if (!act) return;
+      var set = view.sets[Number(act.dataset.set)];
+      if (act.dataset.setAction === 'json') copy(JSON.stringify(setToJson(set), null, 2), 'Set JSON copied');
+      if (act.dataset.setAction === 'tsv') {
+        var active = $('.sap-tab.is-active', act.closest('.set'));
+        var p = set.partners[Number(active.dataset.p)];
+        var flat = Gen.flatten(p);
+        copy(Core.toTSV(Gen.FIELDS.map(function (f) { return [Gen.FIELD_LABELS[f], flat[f]]; })), p.label + ' copied');
+      }
+    });
+    return view;
+  }
+
+  function wireLane(prefix, from, to) {
+    fillSelect($('#' + prefix + '-from'), [['RANDOM', 'Random']].concat(countryOpts), from);
+    fillSelect($('#' + prefix + '-to'), [['RANDOM', 'Random']].concat(countryOpts), to);
+    $('#' + prefix + '-swap').addEventListener('click', function () {
+      var f = $('#' + prefix + '-from').value;
+      $('#' + prefix + '-from').value = $('#' + prefix + '-to').value;
+      $('#' + prefix + '-to').value = f;
+    });
+  }
+
+  /* =========================================================
+   * 1. Addresses
+   * ========================================================= */
+  wireLane('af', 'US', 'MX');
+  var addrView = AddressView($('#af-results'), 'shipTo', false);
+
+  $('#lane-chips').innerHTML = Data.LANES.map(function (l) {
+    return '<button type="button" class="chip" data-from="' + l[0] + '" data-to="' + l[1] + '">' + l[0] + ' → ' + l[1] + '</button>';
+  }).join('') + '<button type="button" class="chip chip-accent" data-from="RANDOM" data-to="RANDOM">Random international</button>';
+  $('#lane-chips').addEventListener('click', function (e) {
+    var b = e.target.closest('.chip'); if (!b) return;
+    $('#af-from').value = b.dataset.from;
+    $('#af-to').value = b.dataset.to;
+    if (b.dataset.from === 'RANDOM') $('#af-intl').checked = true;
+    generateAddresses();
+  });
+
+  function addressOptions() {
+    return {
+      count: Math.min(Math.max(parseInt($('#af-count').value, 10) || 1, 1), 50),
+      from: $('#af-from').value, to: $('#af-to').value, forceIntl: $('#af-intl').checked,
+      partners: checkedValues('af-partner'),
+      nameStyle: $('#af-namestyle').value, namePrefix: $('#af-nameprefix').value,
+      houseSeparate: $('#af-house').value === 'separate',
+      fillSupp: $('#af-supp').checked, fillAddr2: $('#af-addr2').checked, fillAddr34: $('#af-addr34').checked,
+      fillSuburb: $('#af-suburb').checked, fillFax: $('#af-fax').checked,
+      custPrefix: $('#af-custprefix').value, custStart: $('#af-custstart').value || '001'
+    };
+  }
+
+  function generateAddresses() {
+    addrView.seed = seedFor('#af-seed', '#af-autoseed');
+    addrView.sets = Gen.generateAddressSets(addrView.seed, addressOptions());
+    addrView.render();
+    $('#af-summary').innerHTML = addrView.sets.length + ' test set' + (addrView.sets.length > 1 ? 's' : '') + ' · seed <code>' + addrView.seed + '</code>';
+  }
   $('#af-go').addEventListener('click', generateAddresses);
 
   /* =========================================================
-   * 2. Special characters
+   * 2. Special characters: addresses with characters inserted
    * ========================================================= */
-  charSetCheckboxes($('#sc-sets'), 'sc-set', ['punct', 'xml', 'es']);
-  $('#sc-seed').value = Core.newSeed();
-  var scRows = [];
+  var CHAR_NAMES = {
+    '#': 'Number sign', '$': 'Dollar', '%': 'Percent', '&': 'Ampersand', "'": 'Apostrophe', '(': 'Left parenthesis',
+    ')': 'Right parenthesis', '*': 'Asterisk', '<': 'Less-than', '>': 'Greater-than', '@': 'At sign', '^': 'Caret',
+    '!': 'Exclamation', '"': 'Double quote', '+': 'Plus', ',': 'Comma', '-': 'Hyphen', '.': 'Period', '/': 'Slash',
+    ':': 'Colon', ';': 'Semicolon', '=': 'Equals', '?': 'Question mark', '[': 'Left bracket', '\\': 'Backslash',
+    ']': 'Right bracket', '_': 'Underscore', '`': 'Backtick', '{': 'Left brace', '|': 'Pipe', '}': 'Right brace', '~': 'Tilde',
+    ' ': 'Space', ' ': 'Non-breaking space', '\t': 'Tab'
+  };
+  var charLabel = function (c) { return (CHAR_NAMES[c] ? CHAR_NAMES[c] + ' · ' : '') + Core.codePoints(c); };
 
-  function renderSpecial() {
-    var bases = $('#sc-input').value.split('\n').map(function (s) { return s.replace(/\r$/, ''); }).filter(function (s) { return s.trim(); });
-    var chars = selectedChars('sc-set', '#sc-custom');
-    var positions = checkedValues('sc-pos');
-    var maxLen = num('#sc-maxlen', 0);
-    var rng = Core.createRng(Number($('#sc-seed').value) || 1);
-    var labels = { start: 'Beginning', middle: 'Middle', end: 'End' };
-    scRows = [];
-    bases.forEach(function (base) {
-      chars.forEach(function (ch) {
-        positions.forEach(function (pos) {
-          var segs = Core.injectSeg(Core.toSegments(base), ch, pos, rng);
-          var val = Core.segText(segs);
-          scRows.push({ base: base, ch: ch, cp: Core.codePoints(ch), pos: labels[pos], segs: segs, value: val,
-            len: Array.from(val).length, bytes: Core.utf8Bytes(val), xml: Core.xmlEscape(val) });
+  var scSelected = Core.parseChars(Core.CHAR_SETS[0].chars); // carrier table preselected
+
+  function renderMultiSelect() {
+    $('#sc-ms-chips').innerHTML = scSelected.length
+      ? scSelected.map(function (c, i) {
+          return '<span class="ms-chip" title="' + esc(charLabel(c)) + '">' + esc(Core.visible(c)) +
+            '<button type="button" data-remove="' + i + '" aria-label="Remove ' + esc(charLabel(c)) + '">×</button></span>';
+        }).join('') + '<button type="button" class="ms-clear" data-clear>Clear</button>'
+      : '<span class="ms-placeholder">No characters selected</span>';
+    $('#sc-ms-menu').innerHTML = Core.CHAR_SETS.map(function (g) {
+      var chars = Core.parseChars(g.chars);
+      var all = chars.every(function (c) { return scSelected.indexOf(c) >= 0; });
+      return '<div class="ms-group"><div class="ms-group-head"><span>' + esc(g.label) + '</span>' +
+        '<button type="button" data-group="' + g.id + '">' + (all ? 'Remove all' : 'Add all') + '</button></div>' +
+        '<div class="ms-grid">' + chars.map(function (c) {
+          var on = scSelected.indexOf(c) >= 0;
+          return '<button type="button" class="ms-opt' + (on ? ' on' : '') + '" data-ch="' + esc(c) + '" aria-pressed="' + on + '" title="' + esc(charLabel(c)) + '">' + esc(Core.visible(c)) + '</button>';
+        }).join('') + '</div></div>';
+    }).join('');
+  }
+
+  function toggleMenu(open) {
+    var menu = $('#sc-ms-menu');
+    open = open === undefined ? menu.hidden : open;
+    menu.hidden = !open;
+    $('#sc-ms-toggle').setAttribute('aria-expanded', open);
+    $('#sc-ms-toggle').textContent = open ? 'Done ▴' : 'Select ▾';
+  }
+
+  function addManual() {
+    var input = $('#sc-ms-input');
+    // Every typed character is added individually; spaces separate entries
+    var added = 0;
+    Array.from(input.value.replace(/\s+/g, '')).forEach(function (c) {
+      if (scSelected.indexOf(c) < 0) { scSelected.push(c); added++; }
+    });
+    input.value = '';
+    renderMultiSelect();
+    if (added) toast('Added ' + added + ' character' + (added > 1 ? 's' : ''));
+  }
+
+  $('#sc-ms-toggle').addEventListener('click', function () { toggleMenu(); });
+  $('#sc-ms-add').addEventListener('click', addManual);
+  $('#sc-ms-input').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); addManual(); } });
+  $('#sc-ms').addEventListener('click', function (e) {
+    var t = e.target.closest('button'); if (!t) return;
+    if (t.dataset.remove !== undefined) scSelected.splice(Number(t.dataset.remove), 1);
+    else if (t.hasAttribute('data-clear')) scSelected = [];
+    else if (t.dataset.ch !== undefined) {
+      var i = scSelected.indexOf(t.dataset.ch);
+      if (i >= 0) scSelected.splice(i, 1); else scSelected.push(t.dataset.ch);
+    } else if (t.dataset.group) {
+      var g = Core.parseChars(Core.CHAR_SETS.find(function (x) { return x.id === t.dataset.group; }).chars);
+      var all = g.every(function (c) { return scSelected.indexOf(c) >= 0; });
+      if (all) scSelected = scSelected.filter(function (c) { return g.indexOf(c) < 0; });
+      else g.forEach(function (c) { if (scSelected.indexOf(c) < 0) scSelected.push(c); });
+    } else return;
+    renderMultiSelect();
+  });
+  document.addEventListener('click', function (e) { if (!e.target.closest('#sc-ms')) toggleMenu(false); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') toggleMenu(false); });
+
+  $('#sc-fields').innerHTML = Gen.INJECTABLE.map(function (f) {
+    var on = ['addr1', 'addr2', 'city'].indexOf(f) >= 0;
+    return '<label class="check"><input type="checkbox" name="sc-field" value="' + f + '"' + (on ? ' checked' : '') + '> ' + Gen.FIELD_LABELS[f] + '</label>';
+  }).join('');
+  wireLane('sc', 'US', 'CA');
+  var scView = AddressView($('#sc-results'), 'shipTo', true);
+
+  function generateSpecial() {
+    var fields = checkedValues('sc-field');
+    var sp = {
+      enabled: true, chars: scSelected.slice(), positions: checkedValues('sc-pos'), fields: fields,
+      apply: $('#sc-apply').value, together: $('#sc-together').checked,
+      perField: Math.min(Math.max(parseInt($('#sc-per').value, 10) || 1, 1), 5)
+    };
+    if (!sp.chars.length) return toast('Select at least one character');
+    if (!sp.positions.length) return toast('Pick at least one position');
+    if (!fields.length) return toast('Pick at least one field');
+    scView.seed = seedFor('#sc-seed', '#sc-autoseed');
+    scView.sets = Gen.generateAddressSets(scView.seed, {
+      count: Math.min(Math.max(parseInt($('#sc-count').value, 10) || 1, 1), 50),
+      from: $('#sc-from').value, to: $('#sc-to').value, forceIntl: $('#sc-intl').checked, partners: [],
+      nameStyle: 'mixed', houseSeparate: true, fillAddr2: true,
+      fillAddr34: fields.indexOf('addr3') >= 0 || fields.indexOf('addr4') >= 0,
+      fillSuburb: true, custPrefix: 'TSTCUS', custStart: '001', special: sp
+    });
+    scView.render();
+    var used = [];
+    scView.sets.forEach(function (set) {
+      set.partners.forEach(function (p) {
+        Gen.FIELDS.forEach(function (f) {
+          p.fields[f].forEach(function (seg) { if (seg.inj) Array.from(seg.t).forEach(function (c) { if (used.indexOf(c) < 0) used.push(c); }); });
         });
       });
     });
-    var limit = 1500;
-    $('#sc-summary').innerHTML = scRows.length + ' variants (' + bases.length + ' value' + (bases.length === 1 ? '' : 's') + ' × ' +
-      chars.length + ' chars × ' + positions.length + ' positions)' + (scRows.length > limit ? ' · showing first ' + limit + ', export has all' : '');
-    $('#sc-table tbody').innerHTML = scRows.slice(0, limit).map(function (r, i) {
-      var over = maxLen && r.len > maxLen;
-      return '<tr><td class="muted">' + (i + 1) + '</td><td class="nw">' + esc(r.base) + '</td><td class="ch">' + esc(Core.visible(r.ch)) + '</td>' +
-        '<td><code>' + r.cp + '</code></td><td>' + r.pos + '</td>' +
-        '<td class="nw"><button type="button" class="fv inline" data-copy="' + esc(r.value) + '" title="Click to copy">' + segHtml(r.segs) + '</button></td>' +
-        '<td class="num' + (over ? ' warn' : '') + '">' + r.len + '</td><td class="num' + (r.bytes !== r.len ? ' note' : '') + '">' + r.bytes + '</td>' +
-        '<td><code class="xml">' + esc(r.xml) + '</code></td></tr>';
-    }).join('') || '<tr><td colspan="9" class="empty-row">Add a value and pick at least one character set and position.</td></tr>';
+    var missing = sp.chars.filter(function (c) { return used.indexOf(c) < 0; });
+    $('#sc-summary').innerHTML = scView.sets.length + ' test set' + (scView.sets.length > 1 ? 's' : '') + ' · seed <code>' + scView.seed + '</code> · ' +
+      used.length + ' of ' + sp.chars.length + ' characters used' +
+      (missing.length ? ' <span class="warn-text">(add more sets or fields to cover ' + esc(missing.map(Core.visible).join(' ')) + ')</span>' : '');
   }
-
-  ['#sc-input', '#sc-custom', '#sc-maxlen', '#sc-seed'].forEach(function (id) { $(id).addEventListener('input', renderSpecial); });
-  $('#panel-chars').addEventListener('change', renderSpecial);
-  $('#sc-table').addEventListener('click', function (e) {
-    var fv = e.target.closest('.fv'); if (fv) copy(fv.dataset.copy, 'Value copied');
-  });
-
-  function specialRows() {
-    return [['Base', 'Char', 'Code point', 'Position', 'Result', 'Chars', 'UTF-8 bytes', 'XML escaped']].concat(scRows.map(function (r) {
-      return [r.base, r.ch, r.cp, r.pos, r.value, r.len, r.bytes, r.xml];
-    }));
-  }
+  $('#sc-go').addEventListener('click', generateSpecial);
 
   /* =========================================================
    * 3. Handling units
@@ -561,13 +605,20 @@
   }
 
   /* ---------- Toolbar actions ---------- */
+  function exportView(view, kind, name) {
+    if (!view.sets.length) return toast('Generate addresses first');
+    if (kind === 'tsv') copy(Core.toTSV(view.rows()), 'Copied ' + (view.rows().length - 1) + ' rows');
+    if (kind === 'json') copy(view.json(), 'JSON copied');
+    if (kind === 'csv') download(name + '-seed' + view.seed + '-' + stamp() + '.csv', Core.toCSV(view.rows()));
+  }
+
   var ACTIONS = {
-    'af-tsv': function () { if (!addrSets.length) return toast('Generate addresses first'); copy(Core.toTSV(addressRows()), 'Copied ' + (addressRows().length - 1) + ' rows'); },
-    'af-json': function () { if (!addrSets.length) return toast('Generate addresses first'); copy(JSON.stringify({ seed: addrSeed, sets: addrSets.map(setToJson) }, null, 2), 'JSON copied'); },
-    'af-csv': function () { if (!addrSets.length) return toast('Generate addresses first'); download('addresses-seed' + addrSeed + '-' + stamp() + '.csv', Core.toCSV(addressRows())); },
-    'sc-values': function () { copy(scRows.map(function (r) { return r.value; }).join('\n'), 'Copied ' + scRows.length + ' values'); },
-    'sc-tsv': function () { copy(Core.toTSV(specialRows()), 'Copied ' + scRows.length + ' rows'); },
-    'sc-csv': function () { download('special-chars-' + stamp() + '.csv', Core.toCSV(specialRows())); },
+    'af-tsv': function () { exportView(addrView, 'tsv', 'addresses'); },
+    'af-json': function () { exportView(addrView, 'json', 'addresses'); },
+    'af-csv': function () { exportView(addrView, 'csv', 'addresses'); },
+    'sc-tsv': function () { exportView(scView, 'tsv', 'special-char-addresses'); },
+    'sc-json': function () { exportView(scView, 'json', 'special-char-addresses'); },
+    'sc-csv': function () { exportView(scView, 'csv', 'special-char-addresses'); },
     'hu-tsv': function () { if (!hus.length) return toast('Generate HUs first'); copy(Core.toTSV(huRows()), 'Copied ' + hus.length + ' HUs'); },
     'hu-json': function () { if (!hus.length) return toast('Generate HUs first'); copy(JSON.stringify({ seed: huSeed, handlingUnits: hus }, null, 2), 'JSON copied'); },
     'hu-csv': function () { if (!hus.length) return toast('Generate HUs first'); download('handling-units-seed' + huSeed + '-' + stamp() + '.csv', Core.toCSV(huRows())); },
@@ -623,9 +674,9 @@
   });
 
   /* ---------- Init ---------- */
-  syncSpecialState();
+  renderMultiSelect();
   generateAddresses();
-  renderSpecial();
+  generateSpecial();
   generateHUs();
   ACTIONS['cv-sample']();
   try {

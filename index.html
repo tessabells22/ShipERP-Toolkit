@@ -84,43 +84,6 @@
           </div>
         </details>
 
-        <details id="sp-box">
-          <summary>Special characters <span class="pill" id="sp-state">off</span></summary>
-          <label class="check strong"><input type="checkbox" id="sp-enabled"> Inject special characters</label>
-          <fieldset>
-            <legend>Character sets</legend>
-            <div id="sp-sets" class="set-list"></div>
-            <label class="field"><span>Custom (space-separated)</span><input type="text" id="sp-custom" placeholder="e.g. ~ ^ | \"></label>
-          </fieldset>
-          <fieldset>
-            <legend>Position</legend>
-            <div class="inline-checks">
-              <label class="check"><input type="checkbox" name="sp-pos" value="start" checked> Beginning</label>
-              <label class="check"><input type="checkbox" name="sp-pos" value="middle" checked> Middle</label>
-              <label class="check"><input type="checkbox" name="sp-pos" value="end" checked> End</label>
-            </div>
-            <label class="field"><span>Placement</span>
-              <select id="sp-mode">
-                <option value="random">Random position per field</option>
-                <option value="each">Every selected position in each field</option>
-              </select>
-            </label>
-            <label class="field" id="sp-per-wrap"><span>Characters per field</span><input type="number" id="sp-per" min="1" max="5" value="1"></label>
-          </fieldset>
-          <fieldset>
-            <legend>Fields</legend>
-            <div class="inline-checks" id="sp-fields"></div>
-          </fieldset>
-          <label class="field"><span>Apply to</span>
-            <select id="sp-apply">
-              <option value="both">Ship From and Ship To</option>
-              <option value="from">Ship From only</option>
-              <option value="to">Ship To only</option>
-              <option value="all">All partners</option>
-            </select>
-          </label>
-        </details>
-
         <div class="seed">
           <label class="field"><span>Seed</span><input type="number" id="af-seed"></label>
           <label class="check"><input type="checkbox" id="af-autoseed" checked> New seed each run</label>
@@ -137,7 +100,7 @@
             <button class="btn btn-secondary" data-action="af-csv" type="button">Download CSV</button>
           </div>
         </div>
-        <p class="hint">Click any value to copy it. Injected characters are <mark class="inj">highlighted</mark>; fields over the SAP field length turn red.</p>
+        <p class="hint">Click any value to copy it. Fields over the SAP field length turn red.</p>
         <div id="af-results"></div>
       </section>
     </section>
@@ -145,47 +108,76 @@
     <!-- ================= 2. SPECIAL CHARACTERS ================= -->
     <section class="panel" id="panel-chars" role="tabpanel" hidden>
       <aside class="controls card">
-        <h2>Base values</h2>
-        <label class="field"><span>One value per line (your existing master data)</span>
-          <textarea id="sc-input" rows="5">Airport Plaza Drive
-5400 Betty 30 N
-Reynosa</textarea>
-        </label>
-        <fieldset>
-          <legend>Character sets</legend>
-          <div id="sc-sets" class="set-list"></div>
-          <label class="field"><span>Custom (space-separated)</span><input type="text" id="sc-custom" placeholder="e.g. ~ ^ | \"></label>
-        </fieldset>
+        <h2>Special characters</h2>
+        <div class="field">
+          <span>Characters to test</span>
+          <div class="ms" id="sc-ms">
+            <div class="ms-control" id="sc-ms-control">
+              <div class="ms-chips" id="sc-ms-chips"></div>
+              <button type="button" class="ms-toggle" id="sc-ms-toggle" aria-haspopup="listbox" aria-expanded="false">Select ▾</button>
+            </div>
+            <div class="ms-menu" id="sc-ms-menu" hidden></div>
+          </div>
+          <div class="ms-add">
+            <input type="text" id="sc-ms-input" placeholder="Not in the list? Type it, press Enter" aria-label="Add a character manually">
+            <button type="button" class="btn btn-ghost btn-sm" id="sc-ms-add">Add</button>
+          </div>
+        </div>
+        <div class="row-2">
+          <label class="field"><span>Characters per field</span><input type="number" id="sc-per" min="1" max="5" value="2"></label>
+          <label class="check check-pad"><input type="checkbox" id="sc-together" checked> Keep them together</label>
+        </div>
         <fieldset>
           <legend>Position</legend>
           <div class="inline-checks">
-            <label class="check"><input type="checkbox" name="sc-pos" value="start" checked> Beginning</label>
-            <label class="check"><input type="checkbox" name="sc-pos" value="middle" checked> Middle</label>
+            <label class="check"><input type="checkbox" name="sc-pos" value="start"> Beginning</label>
+            <label class="check"><input type="checkbox" name="sc-pos" value="middle"> Middle</label>
             <label class="check"><input type="checkbox" name="sc-pos" value="end" checked> End</label>
           </div>
         </fieldset>
-        <div class="row-2">
-          <label class="field"><span>Max length (warn above)</span><input type="number" id="sc-maxlen" value="40" min="1"></label>
-          <label class="field"><span>Seed (middle position)</span><input type="number" id="sc-seed"></label>
+        <fieldset>
+          <legend>Fields</legend>
+          <div class="inline-checks" id="sc-fields"></div>
+        </fieldset>
+        <label class="field"><span>Apply to</span>
+          <select id="sc-apply">
+            <option value="both">Ship From and Ship To</option>
+            <option value="to">Ship To only</option>
+            <option value="from">Ship From only</option>
+          </select>
+        </label>
+
+        <fieldset>
+          <legend>Shipment lane</legend>
+          <div class="lane">
+            <label class="field"><span>Ship From</span><select id="sc-from"></select></label>
+            <button class="icon-btn" id="sc-swap" type="button" title="Swap countries" aria-label="Swap countries">⇄</button>
+            <label class="field"><span>Ship To</span><select id="sc-to"></select></label>
+          </div>
+          <div class="row-2">
+            <label class="field"><span>Test sets</span><input type="number" id="sc-count" min="1" max="50" value="3"></label>
+            <label class="check check-pad"><input type="checkbox" id="sc-intl" checked> International only</label>
+          </div>
+        </fieldset>
+
+        <div class="seed">
+          <label class="field"><span>Seed</span><input type="number" id="sc-seed"></label>
+          <label class="check"><input type="checkbox" id="sc-autoseed" checked> New seed each run</label>
         </div>
-        <p class="hint">One row per value × character × position, so every combination is covered.</p>
+        <button class="btn btn-primary btn-block" id="sc-go" type="button">Generate addresses</button>
       </aside>
 
       <section class="results">
         <div class="toolbar">
           <div class="toolbar-info" id="sc-summary"></div>
           <div class="toolbar-actions">
-            <button class="btn btn-ghost" data-action="sc-values" type="button">Copy values only</button>
             <button class="btn btn-ghost" data-action="sc-tsv" type="button">Copy for Excel</button>
+            <button class="btn btn-ghost" data-action="sc-json" type="button">Copy JSON</button>
             <button class="btn btn-secondary" data-action="sc-csv" type="button">Download CSV</button>
           </div>
         </div>
-        <div class="table-wrap">
-          <table class="data" id="sc-table">
-            <thead><tr><th>#</th><th>Base</th><th>Char</th><th>Code point</th><th>Position</th><th>Result</th><th class="num">Chars</th><th class="num">UTF-8 bytes</th><th>XML escaped</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
+        <p class="hint">Click any value to copy it. Inserted characters are <mark class="inj">highlighted</mark>; fields over the SAP field length turn red. Every selected character is used before any repeats.</p>
+        <div id="sc-results"></div>
       </section>
     </section>
 

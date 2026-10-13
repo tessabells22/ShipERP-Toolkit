@@ -6,9 +6,7 @@ Test data generator for the Carrier Compliance QA team. Static site: plain HTML/
 
 **1. International Addresses.** Generates Ship From / Ship To pairs (plus optional Sold To, Importer, Ultimate Consignee) for any country combination, laid out like the ShipERP address screen. Click any value to copy it. 15 countries with real city / region / postal-code combinations so carrier address validation passes. Phone numbers use ranges reserved for fiction, emails use `example.com/.net/.org`.
 
-**2. Special Characters.** Two ways:
-- In the address tab, open *Special characters* to inject characters into chosen fields at the beginning, middle or end (random or every position).
-- In the Special Characters tab, paste your own values and get every value × character × position combination, with code point, length, UTF-8 byte count and XML-escaped form.
+**2. Special Characters.** Generates Ship From / Ship To addresses with special characters inserted into the fields you choose (Addr 1, Addr 2, City by default), at the beginning, middle or end, alone or clustered (e.g. `Burnaby#$`). Characters are picked from a multi-select dropdown, preloaded with the carrier table (/ERPIS/CHARS2) list; anything not listed can be typed in. Every selected character is used before any repeats, and the summary flags any that didn't fit.
 
 **3. Handling Units.** N HUs with weights and dimensions in any UoM (LB, KG, G, OZ / IN, CM, MM, M, FT), configurable ranges and decimals, optional mixed LB/IN and KG/CM in the same shipment.
 
@@ -41,5 +39,5 @@ GitHub Pages on a **private** repo needs a paid GitHub plan (Pro / Team / Enterp
 
 - Colors: CSS variables at the top of `assets/css/styles.css`.
 - Countries, cities, streets, phone formats: `assets/js/data.js`. Region codes follow SAP's default T005S values where those are standard; adjust if your system differs.
-- Character sets: `CHAR_SETS` in `assets/js/core.js`.
+- Character groups in the dropdown: `CHAR_SETS` in `assets/js/core.js` (the first group is preselected).
 - SAP field-length warnings: `MAX_LEN` in `assets/js/ui.js`.

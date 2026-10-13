@@ -74,7 +74,7 @@ test('address sets: international, reproducible, valid data', () => {
     count: 25, from: 'RANDOM', to: 'RANDOM', forceIntl: true, partners: ['soldTo', 'importer', 'ultimate'],
     nameStyle: 'mixed', houseSeparate: true, fillSupp: true, fillAddr2: true, fillAddr34: true, fillSuburb: true, fillFax: true,
     custPrefix: 'TSTCUS', custStart: '001',
-    special: { enabled: true, chars: ['&', 'é'], positions: ['start', 'middle', 'end'], fields: ['name', 'addr1', 'city'], apply: 'both', perField: 1, mode: 'each' }
+    special: { enabled: true, chars: ['&', 'é', '#'], positions: ['start', 'middle', 'end'], fields: ['name', 'addr1', 'city'], apply: 'both', perField: 3, together: false }
   };
   const a = Gen.generateAddressSets(99, opts);
   const b = Gen.generateAddressSets(99, opts);
@@ -111,4 +111,23 @@ test('HU generation respects ranges and mixed UoM', () => {
     assert.ok(['KG', 'LB'].includes(h.wUom));
     assert.ok(h.weight > 0);
   });
+});
+
+test('special chars: clustered injection and full coverage', () => {
+  const chars = ['#', '$', '%', '&', "'", '(', ')', '*', '<', '>', '@', '^'];
+  const sets = Gen.generateAddressSets(3, {
+    count: 2, from: 'US', to: 'CA', forceIntl: true, partners: [], nameStyle: 'company', houseSeparate: true,
+    fillAddr2: true, fillSuburb: true, custPrefix: 'C', custStart: '001',
+    special: { enabled: true, chars, positions: ['end'], fields: ['addr1', 'addr2', 'city'], apply: 'both', perField: 2, together: true }
+  });
+  const used = new Set();
+  sets.forEach(set => set.partners.forEach(p => ['addr1', 'addr2', 'city'].forEach(f => {
+    const inj = p.fields[f].filter(s => s.inj);
+    assert.equal(inj.length, 1, 'one cluster per field');
+    assert.equal(Array.from(inj[0].t).length, 2);
+    assert.ok(Core.segText(p.fields[f]).endsWith(inj[0].t));
+    Array.from(inj[0].t).forEach(c => used.add(c));
+  })));
+  // 2 sets x 2 partners x 3 fields x 2 chars = 24 draws: every one of the 12 chars must appear
+  assert.equal(used.size, chars.length);
 });
