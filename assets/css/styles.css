@@ -254,18 +254,7 @@ table.edit .c-id { min-width: 90px; }
 .input-card .table-wrap { max-height: 320px; background: #fff; }
 #cv-paste-box { margin-bottom: 12px; }
 
-/* ---------- Conversion totals ---------- */
-.totals-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-top: 16px; }
-.stat { border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; background: #fff; }
-.stat span { display: block; font-size: 12px; color: var(--muted); font-weight: 600; }
-.stat strong { display: block; font: 700 20px var(--font-head); color: var(--navy); margin: 2px 0; }
-.stat small { color: var(--muted); font-size: 12px; }
-.stat-warn { border-color: #f3b27a; background: #fff6ee; }
-.stat-warn strong { color: var(--orange-dark); }
-.stat-ok { border-color: #a8dcbf; background: var(--ok-soft); }
-.stat-ok strong { color: var(--ok); }
-
-.factors { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 12px; }
+.factors { padding-top: 4px; }
 .factors h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: var(--navy); margin-bottom: 6px; }
 .factors ul { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 3px; }
 .factors code { font-size: 12px; color: var(--ink); }
@@ -383,3 +372,8 @@ table.edit .c-id { min-width: 90px; }
 
 .controls-foot { position: sticky; bottom: 0; background: #fbfcfe; padding: 4px 18px 18px; border-top: 1px solid var(--line); margin-top: auto; z-index: 2; }
 .controls-foot .seed { border-top: 0; margin-top: 0; }
+
+.factors-box { border-top: 1px solid var(--line); margin-top: 6px; }
+.factors-box > summary { padding-bottom: 6px; }
+table.edit .c-pkg { min-width: 54px; width: 60px; }
+#cv-out { margin-top: 4px; }

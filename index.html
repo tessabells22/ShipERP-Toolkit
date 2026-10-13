@@ -32,7 +32,6 @@
   <nav class="tabs wrap" role="tablist" aria-label="Tools">
     <button class="tab is-active" role="tab" data-tab="addr" aria-selected="true">Addresses</button>
     <button class="tab" role="tab" data-tab="hu" aria-selected="false">Handling Units</button>
-    <button class="tab" role="tab" data-tab="conv" aria-selected="false">UoM Conversion</button>
   </nav>
 
   <main class="wrap" id="tool">
@@ -182,49 +181,96 @@
       </section>
     </section>
 
-    <!-- ================= 3. HANDLING UNITS ================= -->
+    <!-- ================= 2. HANDLING UNITS (incl. UoM conversion) ================= -->
     <section class="panel" id="panel-hu" role="tabpanel" hidden>
-      <aside class="controls card">
-        <h2>Handling units</h2>
-        <div class="row-2">
-          <label class="field"><span>Number of HUs</span><input type="number" id="hu-count" min="1" max="200" value="10"></label>
-          <label class="field"><span>Packaging</span>
-            <select id="hu-pkg"><option value="CTN">CTN (carton)</option><option value="BOX">BOX</option><option value="PLT">PLT (pallet)</option><option value="CRT">CRT (crate)</option><option value="MIX">Mixed</option></select>
-          </label>
-        </div>
-        <div class="row-2">
-          <label class="field"><span>Weight UoM</span><select id="hu-wuom"></select></label>
-          <label class="field"><span>Dimension UoM</span><select id="hu-duom"></select></label>
-        </div>
-        <label class="check"><input type="checkbox" id="hu-mixed"> Mix LB/IN and KG/CM across HUs</label>
+      <aside class="controls card controls-acc">
 
-        <fieldset>
-          <legend>Weight</legend>
-          <div class="row-3">
-            <label class="field"><span>Min</span><input type="number" id="hu-wmin" step="any"></label>
-            <label class="field"><span>Max</span><input type="number" id="hu-wmax" step="any"></label>
-            <label class="field"><span>Decimals</span><input type="number" id="hu-wdp" min="0" max="4" value="2"></label>
+        <section class="acc is-open">
+          <div class="acc-head">
+            <button type="button" class="acc-toggle" aria-expanded="true">
+              <span class="acc-title">Handling units</span><span class="acc-sum" id="sum-hu"></span>
+            </button>
           </div>
-        </fieldset>
-        <fieldset>
-          <legend>Dimensions (L × W × H)</legend>
-          <div class="row-3">
-            <label class="field"><span>Min</span><input type="number" id="hu-dmin" step="any"></label>
-            <label class="field"><span>Max</span><input type="number" id="hu-dmax" step="any"></label>
-            <label class="field"><span>Decimals</span><input type="number" id="hu-ddp" min="0" max="4" value="1"></label>
+          <div class="acc-body">
+            <div class="row-2">
+              <label class="field"><span>Number of HUs</span><input type="number" id="hu-count" min="1" max="200" value="10"></label>
+              <label class="field"><span>Packaging</span>
+                <select id="hu-pkg"><option value="CTN">CTN (carton)</option><option value="BOX">BOX</option><option value="PLT">PLT (pallet)</option><option value="CRT">CRT (crate)</option><option value="MIX">Mixed</option></select>
+              </label>
+            </div>
+            <div class="row-2">
+              <label class="field"><span>Weight UoM</span><select id="hu-wuom"></select></label>
+              <label class="field"><span>Dimension UoM</span><select id="hu-duom"></select></label>
+            </div>
+            <label class="check"><input type="checkbox" id="hu-mixed"> Mix LB/IN and KG/CM across HUs</label>
+            <div class="field">
+              <span>Weight</span>
+              <div class="row-3">
+                <label class="field"><span>Min</span><input type="number" id="hu-wmin" step="any"></label>
+                <label class="field"><span>Max</span><input type="number" id="hu-wmax" step="any"></label>
+                <label class="field"><span>Decimals</span><input type="number" id="hu-wdp" min="0" max="4" value="2"></label>
+              </div>
+            </div>
+            <div class="field">
+              <span>Dimensions (L × W × H)</span>
+              <div class="row-3">
+                <label class="field"><span>Min</span><input type="number" id="hu-dmin" step="any"></label>
+                <label class="field"><span>Max</span><input type="number" id="hu-dmax" step="any"></label>
+                <label class="field"><span>Decimals</span><input type="number" id="hu-ddp" min="0" max="4" value="1"></label>
+              </div>
+            </div>
+            <label class="check"><input type="checkbox" id="hu-identical"> All HUs identical</label>
+            <div class="row-2">
+              <label class="field"><span>HU ID prefix</span><input type="text" id="hu-idprefix" value="HU"></label>
+              <label class="field"><span>Start at</span><input type="text" id="hu-idstart" value="0001"></label>
+            </div>
           </div>
-        </fieldset>
-        <label class="check"><input type="checkbox" id="hu-identical"> All HUs identical</label>
-        <div class="row-2">
-          <label class="field"><span>HU ID prefix</span><input type="text" id="hu-idprefix" value="HU"></label>
-          <label class="field"><span>Start at</span><input type="text" id="hu-idstart" value="0001"></label>
-        </div>
+        </section>
 
-        <div class="seed">
-          <label class="field"><span>Seed</span><input type="number" id="hu-seed"></label>
-          <label class="check"><input type="checkbox" id="hu-autoseed" checked> New seed each run</label>
+        <section class="acc acc-sp is-open is-on" id="acc-cv">
+          <div class="acc-head">
+            <button type="button" class="acc-toggle" aria-expanded="true">
+              <span class="acc-title">Convert to web-service UoM</span><span class="acc-sum" id="sum-cv"></span>
+            </button>
+            <label class="switch" title="Convert units"><input type="checkbox" id="cv-enabled" checked aria-label="Convert units"><span></span></label>
+          </div>
+          <div class="acc-body">
+            <div class="row-2">
+              <label class="field"><span>Weight UoM</span><select id="cv-tow"></select></label>
+              <label class="field"><span>Dimension UoM</span><select id="cv-tod"></select></label>
+            </div>
+            <div class="row-3">
+              <label class="field"><span>Weight dp</span><input type="number" id="cv-wdp" min="0" max="6" value="2"></label>
+              <label class="field"><span>Dim dp</span><input type="number" id="cv-ddp" min="0" max="6" value="2"></label>
+              <label class="field"><span>Rounding</span>
+                <select id="cv-mode">
+                  <option value="half-up">Half up</option>
+                  <option value="up">Always up</option>
+                  <option value="down">Truncate</option>
+                  <option value="half-even">Half even</option>
+                </select>
+              </label>
+            </div>
+            <label class="check"><input type="checkbox" id="cv-formula" checked> Show calculation for each value</label>
+            <label class="check"><input type="checkbox" id="cv-dim"> Dim weight and billable weight</label>
+            <div class="row-2" id="cv-dim-opts" hidden>
+              <label class="field"><span>Divisor</span><input type="number" id="cv-div" step="any" value="139"></label>
+              <label class="check check-pad"><input type="checkbox" id="cv-dimup" checked> Round dims up first</label>
+            </div>
+            <details class="factors-box">
+              <summary>Factors used</summary>
+              <div class="factors" id="cv-factors"></div>
+            </details>
+          </div>
+        </section>
+
+        <div class="controls-foot">
+          <div class="seed">
+            <label class="field"><span>Seed</span><input type="number" id="hu-seed"></label>
+            <label class="check"><input type="checkbox" id="hu-autoseed" checked> New seed each run</label>
+          </div>
+          <button class="btn btn-primary btn-block" id="hu-go" type="button">Generate HUs</button>
         </div>
-        <button class="btn btn-primary btn-block" id="hu-go" type="button">Generate HUs</button>
       </aside>
 
       <section class="results">
@@ -233,65 +279,20 @@
           <div class="toolbar-actions">
             <button class="btn btn-ghost" data-action="hu-tsv" type="button">Copy for Excel</button>
             <button class="btn btn-ghost" data-action="hu-json" type="button">Copy JSON</button>
-            <button class="btn btn-ghost" data-action="hu-csv" type="button">Download CSV</button>
-            <button class="btn btn-secondary" data-action="hu-send" type="button">Convert these →</button>
+            <button class="btn btn-secondary" data-action="hu-csv" type="button">Download CSV</button>
           </div>
         </div>
-        <div class="table-wrap">
-          <table class="data" id="hu-table">
-            <thead><tr><th>HU</th><th>Pkg</th><th class="num">Weight</th><th>UoM</th><th class="num">Length</th><th class="num">Width</th><th class="num">Height</th><th>UoM</th><th class="num">Volume</th></tr></thead>
-            <tbody></tbody>
-            <tfoot></tfoot>
-          </table>
-        </div>
-      </section>
-    </section>
 
-    <!-- ================= 4. CONVERSION ================= -->
-    <section class="panel" id="panel-conv" role="tabpanel" hidden>
-      <aside class="controls card">
-        <h2>Convert to (web service UoM)</h2>
-        <div class="row-2">
-          <label class="field"><span>Weight UoM</span><select id="cv-tow"></select></label>
-          <label class="field"><span>Dimension UoM</span><select id="cv-tod"></select></label>
-        </div>
-        <div class="row-3">
-          <label class="field"><span>Weight dp</span><input type="number" id="cv-wdp" min="0" max="6" value="2"></label>
-          <label class="field"><span>Dim dp</span><input type="number" id="cv-ddp" min="0" max="6" value="2"></label>
-          <label class="field"><span>Rounding</span>
-            <select id="cv-mode">
-              <option value="half-up">Half up</option>
-              <option value="up">Always up</option>
-              <option value="down">Truncate</option>
-              <option value="half-even">Half even</option>
-            </select>
-          </label>
-        </div>
-        <fieldset>
-          <legend>Dimensional weight</legend>
-          <label class="check"><input type="checkbox" id="cv-dim"> Calculate dim weight and billable weight</label>
-          <div class="row-2">
-            <label class="field"><span>Divisor</span><input type="number" id="cv-div" step="any" value="139"></label>
-            <label class="check check-pad"><input type="checkbox" id="cv-dimup" checked> Round dims up first</label>
-          </div>
-          <p class="hint">139 is the common IN/LB divisor; 5000 for CM/KG. Check your carrier's tariff.</p>
-        </fieldset>
-        <label class="check"><input type="checkbox" id="cv-formula" checked> Show calculation for each value</label>
-
-        <div class="factors" id="cv-factors"></div>
-      </aside>
-
-      <section class="results">
         <div class="card input-card">
           <div class="toolbar">
-            <h3>Source HUs <span class="muted" id="cv-count"></span></h3>
+            <h3>Handling units <span class="muted" id="cv-count"></span></h3>
             <div class="toolbar-actions">
-              <button class="btn btn-ghost" data-action="cv-add" type="button">+ Row</button>
-              <button class="btn btn-ghost" data-action="cv-paste-toggle" type="button">Paste from Excel</button>
-              <button class="btn btn-ghost" data-action="cv-sample" type="button">Sample</button>
-              <button class="btn btn-ghost" data-action="cv-clear" type="button">Clear</button>
+              <button class="btn btn-ghost btn-sm" data-action="cv-add" type="button">+ Row</button>
+              <button class="btn btn-ghost btn-sm" data-action="cv-paste-toggle" type="button">Paste from Excel</button>
+              <button class="btn btn-ghost btn-sm" data-action="cv-clear" type="button">Clear</button>
             </div>
           </div>
+          <p class="hint">Edit any value and the conversion updates.</p>
           <div id="cv-paste-box" hidden>
             <label class="field"><span>Columns: [HU] Weight, Weight UoM, Length, Width, Height, Dim UoM (tab or comma separated)</span>
               <textarea id="cv-paste" rows="4" placeholder="HU0001	12.5	KG	40	30	20	CM"></textarea>
@@ -300,26 +301,20 @@
           </div>
           <div class="table-wrap">
             <table class="data edit" id="cv-input">
-              <thead><tr><th>HU</th><th class="num">Weight</th><th>UoM</th><th class="num">Length</th><th class="num">Width</th><th class="num">Height</th><th>UoM</th><th></th></tr></thead>
+              <thead><tr><th>HU</th><th>Pkg</th><th class="num">Weight</th><th>UoM</th><th class="num">Length</th><th class="num">Width</th><th class="num">Height</th><th>UoM</th><th></th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
         </div>
 
-        <div class="toolbar">
-          <div class="toolbar-info" id="cv-summary"></div>
-          <div class="toolbar-actions">
-            <button class="btn btn-ghost" data-action="cv-tsv" type="button">Copy for Excel</button>
-            <button class="btn btn-ghost" data-action="cv-json" type="button">Copy JSON</button>
-            <button class="btn btn-secondary" data-action="cv-csv" type="button">Download CSV</button>
+        <div id="cv-out">
+          <div class="toolbar"><h3 id="cv-title">Converted</h3></div>
+          <div class="table-wrap">
+            <table class="data" id="cv-table">
+              <thead></thead><tbody></tbody><tfoot></tfoot>
+            </table>
           </div>
         </div>
-        <div class="table-wrap">
-          <table class="data" id="cv-table">
-            <thead></thead><tbody></tbody><tfoot></tfoot>
-          </table>
-        </div>
-        <div id="cv-totals"></div>
       </section>
     </section>
   </main>

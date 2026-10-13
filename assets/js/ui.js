@@ -422,75 +422,18 @@
   $('#af-go').addEventListener('click', generateAddresses);
 
   /* =========================================================
-   * 3. Handling units
+   * 2. Handling units (conversion is an optional section)
    * ========================================================= */
   var wUoms = Object.keys(Core.WEIGHT).map(function (k) { return [k, k]; });
   var dUoms = Object.keys(Core.LENGTH).map(function (k) { return [k, k]; });
   fillSelect($('#hu-wuom'), wUoms, 'KG');
   fillSelect($('#hu-duom'), dUoms, 'CM');
-
-  function applyDefaultRanges() {
-    var w = Gen.DEFAULT_RANGES.weight[$('#hu-wuom').value];
-    var d = Gen.DEFAULT_RANGES.length[$('#hu-duom').value];
-    $('#hu-wmin').value = w[0]; $('#hu-wmax').value = w[1];
-    $('#hu-dmin').value = d[0]; $('#hu-dmax').value = d[1];
-  }
-  $('#hu-wuom').addEventListener('change', applyDefaultRanges);
-  $('#hu-duom').addEventListener('change', applyDefaultRanges);
-  applyDefaultRanges();
-
-  var hus = [];
-  var huSeed = null;
-
-  function generateHUs() {
-    var wMin = num('#hu-wmin', 1), wMax = num('#hu-wmax', 10);
-    var dMin = num('#hu-dmin', 1), dMax = num('#hu-dmax', 10);
-    if (wMin > wMax) { var t = wMin; wMin = wMax; wMax = t; }
-    if (dMin > dMax) { var t2 = dMin; dMin = dMax; dMax = t2; }
-    huSeed = seedFor('#hu-seed', '#hu-autoseed');
-    hus = Gen.generateHUs(huSeed, {
-      count: Math.min(Math.max(parseInt($('#hu-count').value, 10) || 1, 1), 200),
-      wUom: $('#hu-wuom').value, dUom: $('#hu-duom').value, mixed: $('#hu-mixed').checked,
-      wMin: wMin, wMax: wMax, wDp: Math.min(Math.max(parseInt($('#hu-wdp').value, 10) || 0, 0), 4),
-      dMin: dMin, dMax: dMax, dDp: Math.min(Math.max(parseInt($('#hu-ddp').value, 10) || 0, 0), 4),
-      identical: $('#hu-identical').checked, packaging: $('#hu-pkg').value,
-      idPrefix: $('#hu-idprefix').value, idStart: $('#hu-idstart').value || '1'
-    });
-    renderHUs();
-  }
-
-  function dpOf(v) { var s = String(v); var i = s.indexOf('.'); return i < 0 ? 0 : s.length - i - 1; }
-
-  function renderHUs() {
-    var wDp = parseInt($('#hu-wdp').value, 10) || 0;
-    var dDp = parseInt($('#hu-ddp').value, 10) || 0;
-    $('#hu-table tbody').innerHTML = hus.map(function (h) {
-      var vol = Core.roundTo(h.l * h.w * h.h, Math.min(dDp * 3, 6), 'half-up');
-      return '<tr><td><code>' + esc(h.id) + '</code></td><td>' + h.pkg + '</td><td class="num">' + Core.fmt(h.weight, wDp) + '</td><td>' + h.wUom +
-        '</td><td class="num">' + Core.fmt(h.l, dDp) + '</td><td class="num">' + Core.fmt(h.w, dDp) + '</td><td class="num">' + Core.fmt(h.h, dDp) +
-        '</td><td>' + h.dUom + '</td><td class="num muted">' + vol + ' ' + h.dUom.toLowerCase() + '³</td></tr>';
-    }).join('');
-    var totals = {};
-    hus.forEach(function (h) { totals[h.wUom] = (totals[h.wUom] || 0) + h.weight; });
-    $('#hu-table tfoot').innerHTML = '<tr><td colspan="2">Total</td><td class="num" colspan="2">' + Object.keys(totals).map(function (u) {
-      return Core.fmt(Core.roundTo(totals[u], wDp), wDp) + ' ' + u;
-    }).join(' + ') + '</td><td colspan="5"></td></tr>';
-    $('#hu-summary').innerHTML = hus.length + ' HU' + (hus.length === 1 ? '' : 's') + ' · seed <code>' + huSeed + '</code>';
-  }
-
-  function huRows() {
-    return [['HU', 'Packaging', 'Weight', 'Weight UoM', 'Length', 'Width', 'Height', 'Dim UoM']].concat(hus.map(function (h) {
-      return [h.id, h.pkg, h.weight, h.wUom, h.l, h.w, h.h, h.dUom];
-    }));
-  }
-
-  $('#hu-go').addEventListener('click', generateHUs);
-
-  /* =========================================================
-   * 4. Conversion
-   * ========================================================= */
   fillSelect($('#cv-tow'), wUoms, 'LB');
   fillSelect($('#cv-tod'), dUoms, 'IN');
+
+  // Metric source converts to imperial by default and vice versa
+  var OTHER_W = { KG: 'LB', G: 'LB', LB: 'KG', OZ: 'KG' };
+  var OTHER_D = { CM: 'IN', MM: 'IN', M: 'IN', IN: 'CM', FT: 'CM' };
 
   function syncDivisor() {
     var key = $('#cv-tod').value + '/' + $('#cv-tow').value;
@@ -499,6 +442,42 @@
   $('#cv-tow').addEventListener('change', syncDivisor);
   $('#cv-tod').addEventListener('change', syncDivisor);
 
+  function applyDefaultRanges() {
+    var w = Gen.DEFAULT_RANGES.weight[$('#hu-wuom').value];
+    var d = Gen.DEFAULT_RANGES.length[$('#hu-duom').value];
+    $('#hu-wmin').value = w[0]; $('#hu-wmax').value = w[1];
+    $('#hu-dmin').value = d[0]; $('#hu-dmax').value = d[1];
+  }
+  $('#hu-wuom').addEventListener('change', function () {
+    applyDefaultRanges();
+    if ($('#cv-tow').value === this.value) { $('#cv-tow').value = OTHER_W[this.value]; syncDivisor(); }
+  });
+  $('#hu-duom').addEventListener('change', function () {
+    applyDefaultRanges();
+    if ($('#cv-tod').value === this.value) { $('#cv-tod').value = OTHER_D[this.value]; syncDivisor(); }
+  });
+  applyDefaultRanges();
+
+  var huSeed = null;
+
+  function generateHUs() {
+    var wMin = num('#hu-wmin', 1), wMax = num('#hu-wmax', 10);
+    var dMin = num('#hu-dmin', 1), dMax = num('#hu-dmax', 10);
+    if (wMin > wMax) { var t = wMin; wMin = wMax; wMax = t; }
+    if (dMin > dMax) { var t2 = dMin; dMin = dMax; dMax = t2; }
+    huSeed = seedFor('#hu-seed', '#hu-autoseed');
+    setInputRows(Gen.generateHUs(huSeed, {
+      count: Math.min(Math.max(parseInt($('#hu-count').value, 10) || 1, 1), 200),
+      wUom: $('#hu-wuom').value, dUom: $('#hu-duom').value, mixed: $('#hu-mixed').checked,
+      wMin: wMin, wMax: wMax, wDp: Math.min(Math.max(parseInt($('#hu-wdp').value, 10) || 0, 0), 4),
+      dMin: dMin, dMax: dMax, dDp: Math.min(Math.max(parseInt($('#hu-ddp').value, 10) || 0, 0), 4),
+      identical: $('#hu-identical').checked, packaging: $('#hu-pkg').value,
+      idPrefix: $('#hu-idprefix').value, idStart: $('#hu-idstart').value || '1'
+    }));
+  }
+  $('#hu-go').addEventListener('click', generateHUs);
+
+  /* ---------- Editable HU table ---------- */
   function uomSelect(cls, list, value) {
     return '<select class="' + cls + '">' + list.map(function (u) {
       return '<option' + (u[0] === value ? ' selected' : '') + '>' + u[0] + '</option>';
@@ -506,9 +485,10 @@
   }
 
   function addInputRow(h) {
-    h = h || { id: 'HU' + String($$('#cv-input tbody tr').length + 1).padStart(4, '0'), weight: '', wUom: 'KG', l: '', w: '', h: '', dUom: 'CM' };
+    h = h || { id: 'HU' + String($$('#cv-input tbody tr').length + 1).padStart(4, '0'), pkg: 'CTN', weight: '', wUom: $('#hu-wuom').value, l: '', w: '', h: '', dUom: $('#hu-duom').value };
     var tr = document.createElement('tr');
     tr.innerHTML = '<td><input class="c-id" value="' + esc(h.id) + '"></td>' +
+      '<td><input class="c-pkg" value="' + esc(h.pkg || '') + '"></td>' +
       '<td><input class="c-w num" type="number" step="any" value="' + esc(h.weight) + '"></td>' +
       '<td>' + uomSelect('c-wu', wUoms, h.wUom) + '</td>' +
       '<td><input class="c-l num" type="number" step="any" value="' + esc(h.l) + '"></td>' +
@@ -528,7 +508,7 @@
   function readInputRows() {
     return $$('#cv-input tbody tr').map(function (tr) {
       return {
-        id: $('.c-id', tr).value,
+        id: $('.c-id', tr).value, pkg: $('.c-pkg', tr).value,
         weight: parseFloat($('.c-w', tr).value), wUom: $('.c-wu', tr).value,
         l: parseFloat($('.c-l', tr).value), w: parseFloat($('.c-wd', tr).value), h: parseFloat($('.c-h', tr).value),
         dUom: $('.c-du', tr).value
@@ -536,7 +516,9 @@
     }).filter(function (h) { return [h.weight, h.l, h.w, h.h].every(function (v) { return !isNaN(v); }); });
   }
 
+  /* ---------- Conversion ---------- */
   var conv = null;
+  var cvOn = function () { return $('#cv-enabled').checked; };
 
   function convOpts() {
     return {
@@ -557,30 +539,46 @@
     Object.keys(Core.LENGTH).forEach(function (u) {
       if (u !== o.toD) lines.push('1 ' + u + ' = ' + Core.factorText(Core.factor(Core.LENGTH, u, o.toD)) + ' ' + o.toD);
     });
-    $('#cv-factors').innerHTML = '<h3>Factors used</h3><ul>' + lines.map(function (l) { return '<li><code>' + l + '</code></li>'; }).join('') +
-      '</ul><p class="hint">Based on the exact definitions 1 lb = 0.45359237 kg and 1 in = 2.54 cm.</p>';
+    $('#cv-factors').innerHTML = '<ul>' + lines.map(function (l) { return '<li><code>' + l + '</code></li>'; }).join('') +
+      '</ul><p class="hint">Exact definitions: 1 lb = 0.45359237 kg, 1 in = 2.54 cm.</p>';
+  }
+
+  function updateHuSummaries() {
+    var mixed = $('#hu-mixed').checked;
+    $('#sum-hu').textContent = (parseInt($('#hu-count').value, 10) || 1) + ' HUs · ' +
+      (mixed ? 'mixed LB/IN + KG/CM' : $('#hu-wuom').value + '/' + $('#hu-duom').value) + ' · ' + $('#hu-pkg').value;
+    var o = convOpts();
+    $('#acc-cv').classList.toggle('is-on', cvOn());
+    $('#sum-cv').textContent = cvOn()
+      ? o.toW + '/' + o.toD + ' · ' + o.wDp + ' dp · ' + $('#cv-mode').selectedOptions[0].text.toLowerCase() + (o.dimWeight ? ' · dim wt' : '')
+      : 'Off';
+    $('#cv-dim-opts').hidden = !o.dimWeight;
   }
 
   function renderConversion() {
+    updateHuSummaries();
     var o = convOpts();
     var src = readInputRows();
     $('#cv-count').textContent = '(' + src.length + ')';
     renderFactors();
+    var seedTxt = huSeed ? ' · seed <code>' + huSeed + '</code>' : '';
+    $('#hu-summary').innerHTML = src.length + ' HU' + (src.length === 1 ? '' : 's') + seedTxt +
+      (cvOn() && src.length ? ' · converted to ' + o.toW + '/' + o.toD + ', ' + $('#cv-mode').selectedOptions[0].text.toLowerCase() + ' rounding' : '');
+    $('#cv-out').hidden = !cvOn();
     if (!src.length) {
       conv = null;
       $('#cv-table thead').innerHTML = '';
-      $('#cv-table tbody').innerHTML = '<tr><td class="empty-row">Add HUs above, paste from Excel, or send them from the Handling Units tab.</td></tr>';
+      $('#cv-table tbody').innerHTML = '<tr><td class="empty-row">Generate HUs, add rows, or paste from Excel.</td></tr>';
       $('#cv-table tfoot').innerHTML = '';
-      $('#cv-totals').innerHTML = '';
-      $('#cv-summary').textContent = '';
       return;
     }
     conv = Core.convertHUs(src, o);
+    if (!cvOn()) return;
+    $('#cv-title').textContent = 'Converted to ' + o.toW + ' / ' + o.toD;
     var showF = $('#cv-formula').checked;
-    var head = '<tr><th>HU</th><th class="num">Weight (' + o.toW + ')</th>' +
+    $('#cv-table thead').innerHTML = '<tr><th>HU</th><th class="num">Weight (' + o.toW + ')</th>' +
       '<th class="num">Length (' + o.toD + ')</th><th class="num">Width (' + o.toD + ')</th><th class="num">Height (' + o.toD + ')</th>' +
       (o.dimWeight ? '<th class="num">Dim wt (' + o.toW + ')</th><th class="num">Billable (' + o.toW + ')</th>' : '') + '</tr>';
-    $('#cv-table thead').innerHTML = head;
 
     var cell = function (val, dp, formula) {
       return '<td class="num"><strong>' + Core.fmt(val, dp) + '</strong>' + (showF && formula ? '<small class="calc">' + formula + '</small>' : '') + '</td>';
@@ -606,27 +604,22 @@
     var t = conv.totals;
     $('#cv-table tfoot').innerHTML = '<tr><td>Total</td><td class="num"><strong>' + Core.fmt(t.sumOfRounded, o.wDp) + '</strong></td><td colspan="3"></td>' +
       (o.dimWeight ? '<td></td><td class="num"><strong>' + Core.fmt(t.billable, o.wDp) + '</strong></td>' : '') + '</tr>';
-
-    var srcTotal = Object.keys(t.source).map(function (u) { return Number(t.source[u].toPrecision(10)) + ' ' + u; }).join(' + ');
-    var mismatch = t.delta !== 0;
-    $('#cv-totals').innerHTML = '<div class="totals-grid">' +
-      '<div class="stat"><span>Source total</span><strong>' + srcTotal + '</strong></div>' +
-      '<div class="stat"><span>Sum of converted HUs</span><strong>' + Core.fmt(t.sumOfRounded, o.wDp) + ' ' + o.toW + '</strong><small>each HU rounded, then added</small></div>' +
-      '<div class="stat"><span>Converted total</span><strong>' + Core.fmt(t.roundedOfSum, o.wDp) + ' ' + o.toW + '</strong><small>added unrounded, then rounded</small></div>' +
-      '<div class="stat ' + (mismatch ? 'stat-warn' : 'stat-ok') + '"><span>Difference</span><strong>' + (mismatch ? t.delta + ' ' + o.toW : 'none') +
-      '</strong><small>' + (mismatch ? 'Rounding drift: check which total the web service sends' : 'Both totaling methods agree') + '</small></div></div>';
-    $('#cv-summary').innerHTML = conv.rows.length + ' HU' + (conv.rows.length === 1 ? '' : 's') + ' → ' + o.toW + '/' + o.toD + ', ' + $('#cv-mode').selectedOptions[0].text.toLowerCase() + ' rounding';
   }
 
-  function convRows() {
-    if (!conv) return [];
+  // One export covers source HUs, plus the converted values when conversion is on
+  function huExportRows() {
+    var src = readInputRows();
+    if (!src.length) return [];
+    var head = ['HU', 'Packaging', 'Weight', 'Weight UoM', 'Length', 'Width', 'Height', 'Dim UoM'];
+    if (!cvOn()) {
+      return [head].concat(src.map(function (h) { return [h.id, h.pkg, h.weight, h.wUom, h.l, h.w, h.h, h.dUom]; }));
+    }
     var o = convOpts();
-    var head = ['HU', 'Source weight', 'Source weight UoM', 'Source L', 'Source W', 'Source H', 'Source dim UoM',
-      'Weight (' + o.toW + ')', 'Length (' + o.toD + ')', 'Width (' + o.toD + ')', 'Height (' + o.toD + ')', 'Weight factor', 'Dim factor'];
+    head = head.concat(['Weight (' + o.toW + ')', 'Length (' + o.toD + ')', 'Width (' + o.toD + ')', 'Height (' + o.toD + ')', 'Weight factor', 'Dim factor']);
     if (o.dimWeight) head.push('Dim weight (' + o.toW + ')', 'Billable (' + o.toW + ')');
     return [head].concat(conv.rows.map(function (r) {
       var s = r.src;
-      var row = [r.id, s.weight, s.wUom, s.l, s.w, s.h, s.dUom, Core.fmt(r.weight, o.wDp)]
+      var row = [r.id, s.pkg, s.weight, s.wUom, s.l, s.w, s.h, s.dUom, Core.fmt(r.weight, o.wDp)]
         .concat(r.dims.map(function (d) { return Core.fmt(d.value, o.dDp); }))
         .concat([Core.factorText(r.wFactor), Core.factorText(r.dFactor)]);
       if (o.dimWeight) row.push(Core.fmt(r.dimWeight, o.wDp), Core.fmt(r.billable, o.wDp));
@@ -634,16 +627,33 @@
     }));
   }
 
-  $('#panel-conv').addEventListener('input', function (e) {
-    if (e.target.id !== 'cv-paste') renderConversion();
+  function huJson() {
+    var src = readInputRows();
+    var out = { seed: huSeed, handlingUnits: src };
+    if (cvOn() && conv) {
+      var o = convOpts();
+      out.converted = {
+        weightUom: o.toW, dimUom: o.toD, rounding: o.mode,
+        handlingUnits: conv.rows.map(function (r) {
+          var x = { id: r.id, weight: r.weight, length: r.dims[0].value, width: r.dims[1].value, height: r.dims[2].value };
+          if (o.dimWeight) { x.dimWeight = r.dimWeight; x.billableWeight = r.billable; }
+          return x;
+        }),
+        totalWeight: conv.totals.sumOfRounded
+      };
+    }
+    return JSON.stringify(out, null, 2);
+  }
+
+  $('#cv-enabled').addEventListener('change', function () {
+    if (this.checked) setOpen(this.closest('.acc'), true);
   });
-  $('#panel-conv').addEventListener('change', function (e) {
-    if (e.target.id !== 'cv-paste') renderConversion();
-  });
+  $('#panel-hu').addEventListener('input', function (e) { if (e.target.id !== 'cv-paste') renderConversion(); });
+  $('#panel-hu').addEventListener('change', function (e) { if (e.target.id !== 'cv-paste') renderConversion(); });
 
   function parsePasted(text) {
     var out = [];
-    text.split(/\r?\n/).forEach(function (line, i) {
+    text.split(/\r?\n/).forEach(function (line) {
       if (!line.trim()) return;
       var c = line.split(/\t|,|;/).map(function (s) { return s.trim(); });
       if (c.length >= 7) c = c.slice(0, 7); else if (c.length === 6) c = ['HU' + String(out.length + 1).padStart(4, '0')].concat(c); else return;
@@ -651,7 +661,7 @@
       if (isNaN(w)) return; // header row
       var wu = c[2].toUpperCase(), du = c[6].toUpperCase();
       if (!(wu in Core.WEIGHT) || !(du in Core.LENGTH)) return;
-      out.push({ id: c[0], weight: w, wUom: wu, l: parseFloat(c[3]), w: parseFloat(c[4]), h: parseFloat(c[5]), dUom: du });
+      out.push({ id: c[0], pkg: '', weight: w, wUom: wu, l: parseFloat(c[3]), w: parseFloat(c[4]), h: parseFloat(c[5]), dUom: du });
     });
     return out;
   }
@@ -668,53 +678,24 @@
     'af-tsv': function () { exportView(addrView, 'tsv', 'addresses'); },
     'af-json': function () { exportView(addrView, 'json', 'addresses'); },
     'af-csv': function () { exportView(addrView, 'csv', 'addresses'); },
-    'hu-tsv': function () { if (!hus.length) return toast('Generate HUs first'); copy(Core.toTSV(huRows()), 'Copied ' + hus.length + ' HUs'); },
-    'hu-json': function () { if (!hus.length) return toast('Generate HUs first'); copy(JSON.stringify({ seed: huSeed, handlingUnits: hus }, null, 2), 'JSON copied'); },
-    'hu-csv': function () { if (!hus.length) return toast('Generate HUs first'); download('handling-units-seed' + huSeed + '-' + stamp() + '.csv', Core.toCSV(huRows())); },
-    'hu-send': function () {
-      if (!hus.length) return toast('Generate HUs first');
-      setInputRows(hus.map(function (h) { return Object.assign({}, h); }));
-      // Default the target to the "other" system so the conversion is meaningful
-      var first = hus[0];
-      if (first.wUom === 'LB' || first.wUom === 'OZ') { $('#cv-tow').value = 'KG'; $('#cv-tod').value = 'CM'; }
-      else { $('#cv-tow').value = 'LB'; $('#cv-tod').value = 'IN'; }
-      syncDivisor(); renderConversion();
-      showTab('conv');
-      $('#tool').scrollIntoView({ behavior: 'smooth' });
+    'hu-tsv': function () { var r = huExportRows(); if (!r.length) return toast('No HUs to copy'); copy(Core.toTSV(r), 'Copied ' + (r.length - 1) + ' HUs'); },
+    'hu-json': function () { if (!readInputRows().length) return toast('No HUs to copy'); copy(huJson(), 'JSON copied'); },
+    'hu-csv': function () {
+      var r = huExportRows(); if (!r.length) return toast('No HUs to export');
+      download('handling-units' + (huSeed ? '-seed' + huSeed : '') + '-' + stamp() + '.csv', Core.toCSV(r));
     },
     'cv-add': function () { addInputRow(); renderConversion(); var last = $$('#cv-input tbody tr').pop(); $('.c-w', last).focus(); },
-    'cv-clear': function () { setInputRows([]); },
-    'cv-sample': function () {
-      setInputRows([
-        { id: 'HU0001', weight: 12.5, wUom: 'KG', l: 40, w: 30, h: 20, dUom: 'CM' },
-        { id: 'HU0002', weight: 3.333, wUom: 'KG', l: 25.4, w: 25.4, h: 12.7, dUom: 'CM' },
-        { id: 'HU0003', weight: 22.68, wUom: 'KG', l: 60, w: 40, h: 35.5, dUom: 'CM' }
-      ]);
-    },
+    'cv-clear': function () { huSeed = null; setInputRows([]); },
     'cv-paste-toggle': function () { var b = $('#cv-paste-box'); b.hidden = !b.hidden; if (!b.hidden) $('#cv-paste').focus(); },
     'cv-import': function () {
       var rows = parsePasted($('#cv-paste').value);
       if (!rows.length) return toast('No valid rows found');
+      huSeed = null;
       setInputRows(rows);
       $('#cv-paste').value = ''; $('#cv-paste-box').hidden = true;
       toast('Imported ' + rows.length + ' rows');
     },
-    'cv-del': function (btn) { btn.closest('tr').remove(); renderConversion(); },
-    'cv-tsv': function () { if (!conv) return toast('Nothing to copy'); copy(Core.toTSV(convRows()), 'Copied ' + conv.rows.length + ' rows'); },
-    'cv-json': function () {
-      if (!conv) return toast('Nothing to copy');
-      var o = convOpts();
-      copy(JSON.stringify({
-        target: { weightUom: o.toW, dimUom: o.toD, rounding: o.mode },
-        handlingUnits: conv.rows.map(function (r) {
-          var x = { id: r.id, weight: r.weight, length: r.dims[0].value, width: r.dims[1].value, height: r.dims[2].value };
-          if (o.dimWeight) { x.dimWeight = r.dimWeight; x.billableWeight = r.billable; }
-          return x;
-        }),
-        totalWeight: conv.totals.sumOfRounded
-      }, null, 2), 'JSON copied');
-    },
-    'cv-csv': function () { if (!conv) return toast('Nothing to export'); download('uom-conversion-' + stamp() + '.csv', Core.toCSV(convRows())); }
+    'cv-del': function (btn) { btn.closest('tr').remove(); renderConversion(); }
   };
 
   document.addEventListener('click', function (e) {
@@ -727,7 +708,6 @@
   updateSummaries();
   generateAddresses();
   generateHUs();
-  ACTIONS['cv-sample']();
   try {
     var saved = localStorage.getItem('qa-toolkit-tab');
     if (saved && $('#panel-' + saved)) showTab(saved);

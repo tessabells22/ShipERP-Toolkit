@@ -12,9 +12,9 @@ The sidebar has collapsible sections, each showing a one-line summary when close
 - **Partners & names**: extra partners, name style and prefix, Customer # numbering.
 - **Field options**: house number placement and which optional fields to fill.
 
-**2. Handling Units.** N HUs with weights and dimensions in any UoM (LB, KG, G, OZ / IN, CM, MM, M, FT), configurable ranges and decimals, optional mixed LB/IN and KG/CM in the same shipment.
+**2. Handling Units.** Generates N HUs with weights and dimensions in any UoM (LB, KG, G, OZ / IN, CM, MM, M, FT), configurable ranges and decimals, optionally mixing LB/IN and KG/CM in one shipment. The HU table is editable: change values, add rows, or paste from Excel.
 
-**3. UoM Conversion.** Converts HUs to the web-service UoM with the calculation shown per value, configurable rounding, optional dimensional / billable weight, and a check that flags when "sum of rounded HUs" differs from "rounded total" (a common source of carrier payload defects). Rows can come from the Handling Units tab, be typed in, or pasted from Excel.
+With **Convert to web-service UoM** switched on (the default), a second table shows every HU converted to the target UoM with the calculation under each value, configurable decimals and rounding, and optional dimensional / billable weight. Exports include both source and converted values.
 
 **Seeds.** Every generated dataset shows a seed. Untick *New seed each run*, enter the seed from a test case, and the exact same data comes back.
 
