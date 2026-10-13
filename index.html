@@ -332,9 +332,24 @@
             </button>
           </div>
           <div class="acc-body">
-            <label class="field"><span>Units</span>
-              <select id="fc-units"><option value="IN/LB">Inches / pounds</option><option value="CM/KG">Centimetres / kilograms</option></select>
-            </label>
+            <div class="row-2">
+              <label class="field"><span>Dimension unit</span><select id="fc-dunit"></select></label>
+              <label class="field"><span>Weight unit</span><select id="fc-wunit"></select></label>
+            </div>
+            <div class="custom-unit" id="fc-dcustom" hidden>
+              <span class="custom-unit-label">Custom dimension unit</span>
+              <div class="custom-unit-row">
+                <span>1</span><input type="text" id="fc-dname" placeholder="name, e.g. DM" aria-label="Custom dimension unit name">
+                <span>=</span><input type="number" id="fc-dfactor" step="any" min="0" placeholder="3.937" aria-label="Inches per custom unit"><span>in</span>
+              </div>
+            </div>
+            <div class="custom-unit" id="fc-wcustom" hidden>
+              <span class="custom-unit-label">Custom weight unit</span>
+              <div class="custom-unit-row">
+                <span>1</span><input type="text" id="fc-wname" placeholder="name, e.g. CWT" aria-label="Custom weight unit name">
+                <span>=</span><input type="number" id="fc-wfactor" step="any" min="0" placeholder="100" aria-label="Pounds per custom unit"><span>lb</span>
+              </div>
+            </div>
             <label class="field"><span>Weight entered is</span>
               <select id="fc-weightper"><option value="piece">Per piece</option><option value="line">Total for the line</option></select>
             </label>

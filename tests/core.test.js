@@ -167,3 +167,11 @@ test('freight class: density and class lookup', () => {
   const metric = Core.calcFreight([{ qty: 1, l: 121.92, w: 101.6, h: 121.92, weight: 226.796185 }], { dUom: 'CM', wUom: 'KG', weightPer: 'piece', scale: 'classic' });
   assert.equal(Core.roundTo(metric.totals.density, 3), 9.375);
 });
+
+test('freight: unit factor overrides (yards, tonnes, custom)', () => {
+  // 48x40x48 in = 1.3333 x 1.1111 x 1.3333 yd; 500 lb = 0.226796185 t
+  const out = Core.calcFreight([{ qty: 1, l: 48 / 36, w: 40 / 36, h: 48 / 36, weight: 0.226796185 }],
+    { dUom: 'YD', wUom: 'T', toIn: 36, toLb: 2204.62262185, weightPer: 'piece', scale: 'classic' });
+  assert.equal(Core.roundTo(out.totals.density, 3), 9.375);
+  assert.equal(out.totals.cls, '100');
+});

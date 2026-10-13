@@ -161,17 +161,18 @@
   }
 
   /* lines: [{ qty, l, w, h, weight }]
-   * opts: { dUom: 'IN'|'CM', wUom: 'LB'|'KG', weightPer: 'piece'|'line', scale } */
+   * opts: { dUom, wUom, weightPer: 'piece'|'line', scale, toIn?, toLb? }
+   * toIn / toLb override the unit tables, for units not listed there (yards, tonnes, custom). */
   function calcFreight(lines, opts) {
-    var toIn = factor(LENGTH, opts.dUom, 'IN');
-    var toLb = factor(WEIGHT, opts.wUom, 'LB');
+    var toIn = opts.toIn || factor(LENGTH, opts.dUom, 'IN');
+    var toLb = opts.toLb || factor(WEIGHT, opts.wUom, 'LB');
     var rows = lines.map(function (ln) {
       var qty = Math.max(1, Math.round(ln.qty || 1));
       var cuIn = ln.l * toIn * ln.w * toIn * ln.h * toIn;          // one piece
       var cuFt = cuIn / 1728 * qty;
       var lbs = ln.weight * toLb * (opts.weightPer === 'line' ? 1 : qty);
       var density = cuFt > 0 ? lbs / cuFt : 0;
-      return { src: ln, qty: qty, cuInPiece: cuIn, cuFt: cuFt, lbs: lbs, density: density, cls: freightClass(density, opts.scale) };
+      return { src: ln, qty: qty, toIn: toIn, toLb: toLb, cuInPiece: cuIn, cuFt: cuFt, lbs: lbs, density: density, cls: freightClass(density, opts.scale) };
     });
     var totFt = rows.reduce(function (s, r) { return s + r.cuFt; }, 0);
     var totLb = rows.reduce(function (s, r) { return s + r.lbs; }, 0);

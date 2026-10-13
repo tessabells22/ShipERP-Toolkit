@@ -670,7 +670,33 @@
    * ========================================================= */
   fillSelect($('#fc-scale'), Object.keys(Core.FREIGHT_SCALES).map(function (k) { return [k, Core.FREIGHT_SCALES[k].label]; }), 'classic');
   var fc = null;
-  var fcUnits = function () { var u = $('#fc-units').value.split('/'); return { d: u[0], w: u[1] }; };
+  // Units are expressed as inches / pounds per unit, since the class math runs in in³ and lb
+  var LB_PER_KG = Core.factor(Core.WEIGHT, 'KG', 'LB');
+  var FC_DIM = [
+    ['IN', 'Inches (IN)', 1], ['FT', 'Feet (FT)', 12], ['YD', 'Yards (YD)', 36],
+    ['CM', 'Centimetres (CM)', 1 / 2.54], ['MM', 'Millimetres (MM)', 1 / 25.4], ['M', 'Metres (M)', 100 / 2.54]
+  ];
+  var FC_WT = [
+    ['LB', 'Pounds (LB)', 1], ['OZ', 'Ounces (OZ)', 1 / 16], ['KG', 'Kilograms (KG)', LB_PER_KG],
+    ['G', 'Grams (G)', LB_PER_KG / 1000], ['T', 'Metric tonnes (T)', LB_PER_KG * 1000]
+  ];
+  fillSelect($('#fc-dunit'), FC_DIM.map(function (u) { return [u[0], u[1]]; }).concat([['CUSTOM', 'Custom…']]), 'IN');
+  fillSelect($('#fc-wunit'), FC_WT.map(function (u) { return [u[0], u[1]]; }).concat([['CUSTOM', 'Custom…']]), 'LB');
+
+  function fcUnits() {
+    var pick = function (list, sel, nameId, factorId, fallback) {
+      var v = $(sel).value;
+      if (v !== 'CUSTOM') { var row = list.find(function (u) { return u[0] === v; }); return { name: v, f: row[2], ok: true }; }
+      var name = $(nameId).value.trim() || fallback;
+      var f = parseFloat($(factorId).value);
+      return { name: name, f: f, ok: f > 0, custom: true };
+    };
+    var d = pick(FC_DIM, '#fc-dunit', '#fc-dname', '#fc-dfactor', 'unit');
+    var w = pick(FC_WT, '#fc-wunit', '#fc-wname', '#fc-wfactor', 'unit');
+    $('#fc-dcustom').hidden = !d.custom; $('#fc-wcustom').hidden = !w.custom;
+    return { d: d.name, w: w.name, toIn: d.f, toLb: w.f, ok: d.ok && w.ok,
+      msg: !d.ok ? 'Enter how many inches one ' + d.name + ' is.' : !w.ok ? 'Enter how many pounds one ' + w.name + ' is.' : '' };
+  }
   var n2 = function (v) { return Core.fmt(Core.roundTo(v, 2), 2); };
 
   function fcAddRow(r) {
@@ -697,7 +723,7 @@
 
     var lines = fcReadRows();
     $('#fc-count').textContent = '(' + lines.length + ')';
-    fc = lines.length ? Core.calcFreight(lines, { dUom: u.d, wUom: u.w, weightPer: per, scale: scale }) : null;
+    fc = lines.length && u.ok ? Core.calcFreight(lines, { dUom: u.d, wUom: u.w, toIn: u.toIn, toLb: u.toLb, weightPer: per, scale: scale }) : null;
 
     // Density chart with the shipment's tier highlighted
     var tiers = Core.FREIGHT_SCALES[scale].tiers;
@@ -709,7 +735,7 @@
     if (!fc) {
       $('#fc-result').innerHTML = '';
       $('#fc-table thead').innerHTML = ''; $('#fc-table tfoot').innerHTML = '';
-      $('#fc-table tbody').innerHTML = '<tr><td class="empty-row">Enter dimensions and weight above.</td></tr>';
+      $('#fc-table tbody').innerHTML = '<tr><td class="empty-row">' + (u.ok ? 'Enter dimensions and weight above.' : esc(u.msg)) + '</td></tr>';
       $('#fc-summary').textContent = '';
       return;
     }
@@ -722,13 +748,13 @@
     $('#fc-summary').innerHTML = t.pieces + ' piece' + (t.pieces === 1 ? '' : 's') + ' on ' + fc.rows.length + ' line' + (fc.rows.length === 1 ? '' : 's');
 
     var cell = function (val, f) { return '<td class="num"><strong>' + val + '</strong>' + (f ? '<small class="calc">' + f + '</small>' : '') + '</td>'; };
-    var metric = u.d !== 'IN' || u.w !== 'LB';
     $('#fc-table thead').innerHTML = '<tr><th>Line</th><th class="num">Pieces</th><th class="num">Dimensions (' + u.d + ')</th><th class="num">Cubic feet</th><th class="num">Weight (lb)</th><th class="num">Density (lb/ft³)</th><th class="num">Class</th></tr>';
     $('#fc-table tbody').innerHTML = fc.rows.map(function (r, i) {
       var s = r.src;
-      var ftF = (metric ? Number(r.cuInPiece.toPrecision(10)) + ' in³' : s.l + ' × ' + s.w + ' × ' + s.h + ' = ' + Number(r.cuInPiece.toPrecision(10)) + ' in³') +
-        ' ÷ 1728' + (r.qty > 1 ? ' × ' + r.qty : '');
-      var lbF = (u.w !== 'LB' ? s.weight + ' KG × 2.204622622' : s.weight + ' LB') + (per === 'piece' && r.qty > 1 ? ' × ' + r.qty : '');
+      var inch = function (v) { return Number((v * u.toIn).toPrecision(10)); };
+      var ftF = (u.toIn === 1 ? s.l + ' × ' + s.w + ' × ' + s.h : inch(s.l) + ' × ' + inch(s.w) + ' × ' + inch(s.h) + ' in') +
+        ' = ' + Number(r.cuInPiece.toPrecision(10)) + ' in³ ÷ 1728' + (r.qty > 1 ? ' × ' + r.qty : '');
+      var lbF = (u.toLb === 1 ? s.weight + ' LB' : s.weight + ' ' + u.w + ' × ' + Core.factorText(u.toLb)) + (per === 'piece' && r.qty > 1 ? ' × ' + r.qty : '');
       return '<tr><td>' + (i + 1) + '</td>' + cell(r.qty) + cell(s.l + ' × ' + s.w + ' × ' + s.h) +
         cell(n2(r.cuFt), ftF) + cell(n2(r.lbs), lbF) + cell(n2(r.density), n2(r.lbs) + ' ÷ ' + n2(r.cuFt)) + cell(r.cls) + '</tr>';
     }).join('');
@@ -898,9 +924,10 @@
       var hus = readInputRows();
       if (!hus.length) return toast('No HUs on the Handling Units tab');
       var u = fcUnits();
+      if (!u.ok) return toast(u.msg);
       fcSetRows(hus.map(function (h) {
-        var d = function (v) { return Core.roundTo(Core.convertLength(v, h.dUom, u.d), 2); };
-        return { qty: 1, l: d(h.l), w: d(h.w), h: d(h.h), weight: Core.roundTo(Core.convertWeight(h.weight, h.wUom, u.w), 2) };
+        var d = function (v) { return Core.roundTo(Core.convertLength(v, h.dUom, 'IN') / u.toIn, 2); };
+        return { qty: 1, l: d(h.l), w: d(h.w), h: d(h.h), weight: Core.roundTo(Core.convertWeight(h.weight, h.wUom, 'LB') / u.toLb, 2) };
       }));
       $('#fc-weightper').value = 'piece'; renderFreight();
       toast('Loaded ' + hus.length + ' HUs (converted to ' + u.d + '/' + u.w + ')');

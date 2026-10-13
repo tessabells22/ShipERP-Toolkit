@@ -390,3 +390,7 @@ table.chart { font-size: 12.5px; }
 table.chart td, table.chart th { padding: 4px 10px; }
 table.chart tr.hit td { background: #fff1e0 !important; color: var(--orange-dark); font-weight: 700; }
 @media (max-width: 640px) { .fc-result { grid-template-columns: 1fr 1fr; } }
+.custom-unit { background: #fff; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 10px; margin-bottom: 12px; }
+.custom-unit-label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+.custom-unit-row { display: grid; grid-template-columns: auto 1fr auto 1fr auto; gap: 6px; align-items: center; font-size: 13px; }
+.custom-unit-row input { padding: 6px 8px; }
