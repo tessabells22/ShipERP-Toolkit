@@ -19,7 +19,7 @@
     customerNo: 'Customer #', email: 'Email'
   };
   // Fields that can receive special characters
-  var INJECTABLE = ['name', 'attention', 'addr1', 'addr2', 'addr3', 'addr4', 'suburb', 'city'];
+  var INJECTABLE = FIELDS.filter(function (f) { return f !== 'customerNo'; });
 
   var PARTNERS = [
     { id: 'soldTo', label: 'Sold To', side: 'to', optional: true },
@@ -79,6 +79,7 @@
       do { a.addr4 = rng.pick(Data.ADDR_EXTRA); } while (a.addr4 === a.addr3);
     }
     if (opts.fillSuburb && suburbs.length) a.suburb = rng.pick(suburbs);
+    else if (opts.forceSuburb) a.suburb = rng.pick(Data.GENERIC_SUBURBS);
     if (opts.fillFax) a.fax = fillTemplate(rng, phoneTpl);
     a.email = slug(first) + '.' + slug(last) + '@' + rng.pick(Data.EMAIL_DOMAINS);
     return a;

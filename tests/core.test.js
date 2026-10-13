@@ -131,3 +131,19 @@ test('special chars: clustered injection and full coverage', () => {
   // 2 sets x 2 partners x 3 fields x 2 chars = 24 draws: every one of the 12 chars must appear
   assert.equal(used.size, chars.length);
 });
+
+test('special chars: every field except Customer # can be targeted', () => {
+  assert.ok(!Gen.INJECTABLE.includes('customerNo'));
+  ['email', 'phone', 'fax', 'postcode', 'region', 'country', 'houseNum', 'supp', 'suburb'].forEach(f => assert.ok(Gen.INJECTABLE.includes(f), f));
+  const fields = Gen.INJECTABLE;
+  const sets = Gen.generateAddressSets(11, {
+    count: 1, from: 'US', to: 'CA', forceIntl: true, partners: [], nameStyle: 'company', houseSeparate: true,
+    fillAddr2: true, fillAddr34: true, fillSupp: true, fillFax: true, fillSuburb: true, forceSuburb: true,
+    custPrefix: 'C', custStart: '001',
+    special: { enabled: true, chars: ['#'], positions: ['end'], fields, apply: 'both', perField: 1, together: true }
+  });
+  sets[0].partners.forEach(p => {
+    fields.forEach(f => assert.ok(Core.segText(p.fields[f]).endsWith('#'), p.id + ' ' + f + ' = ' + Core.segText(p.fields[f])));
+    assert.ok(!Core.segText(p.fields.customerNo).includes('#'));
+  });
+});

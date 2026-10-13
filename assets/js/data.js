@@ -67,6 +67,8 @@
   var DEPARTMENTS = ['Receiving Dept', 'Shipping Dept', 'Warehouse Manager', 'Logistics Coordinator', 'Accounts Payable', 'Dock Supervisor'];
   var ADDR_EXTRA = ['Dock Door 4', 'Gate 2', 'Loading Bay 3', 'Rear Entrance', 'Receiving Door 7', 'North Building'];
   var EMAIL_DOMAINS = ['example.com', 'example.net', 'example.org'];
+  // Used only when a test needs Suburb filled in a country without suburb data
+  var GENERIC_SUBURBS = ['Downtown', 'Industrial Park', 'Northside', 'Westgate', 'Harbourfront'];
 
   var C = {};
 
@@ -356,7 +358,7 @@
 
   return {
     NAMES: NAMES, COMPANY_PREFIX: COMPANY_PREFIX, COMPANY_NOUN: COMPANY_NOUN,
-    DEPARTMENTS: DEPARTMENTS, ADDR_EXTRA: ADDR_EXTRA, EMAIL_DOMAINS: EMAIL_DOMAINS,
+    DEPARTMENTS: DEPARTMENTS, ADDR_EXTRA: ADDR_EXTRA, EMAIL_DOMAINS: EMAIL_DOMAINS, GENERIC_SUBURBS: GENERIC_SUBURBS,
     COUNTRIES: C, LANES: LANES
   };
 });

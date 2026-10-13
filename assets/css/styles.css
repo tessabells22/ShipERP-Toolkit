@@ -336,3 +336,6 @@ table.edit .c-id { min-width: 90px; }
 .ms-add { display: flex; gap: 6px; margin-top: 6px; }
 .ms-add input { flex: 1 1 auto; }
 .warn-text { color: var(--orange-dark); font-weight: 600; }
+.link-btn { border: 0; background: none; padding: 0; color: var(--blue); font: 600 12.5px var(--font-body); cursor: pointer; }
+.link-btn:hover { text-decoration: underline; }
+#sc-fields .check { min-width: 92px; }

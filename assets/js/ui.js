@@ -328,10 +328,18 @@
   document.addEventListener('click', function (e) { if (!e.target.closest('#sc-ms')) toggleMenu(false); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') toggleMenu(false); });
 
+  var SC_FIELD_LABELS = { region: 'State', postcode: 'PostCode', country: 'Ctry' };
   $('#sc-fields').innerHTML = Gen.INJECTABLE.map(function (f) {
     var on = ['addr1', 'addr2', 'city'].indexOf(f) >= 0;
-    return '<label class="check"><input type="checkbox" name="sc-field" value="' + f + '"' + (on ? ' checked' : '') + '> ' + Gen.FIELD_LABELS[f] + '</label>';
+    return '<label class="check"><input type="checkbox" name="sc-field" value="' + f + '"' + (on ? ' checked' : '') + '> ' +
+      (SC_FIELD_LABELS[f] || Gen.FIELD_LABELS[f]) + '</label>';
   }).join('');
+  $('#sc-fields-all').addEventListener('click', function () {
+    var boxes = $$('input[name="sc-field"]');
+    var all = boxes.every(function (b) { return b.checked; });
+    boxes.forEach(function (b) { b.checked = !all; });
+    this.textContent = all ? 'Select all' : 'Clear';
+  });
   wireLane('sc', 'US', 'CA');
   var scView = AddressView($('#sc-results'), 'shipTo', true);
 
@@ -350,8 +358,11 @@
       count: Math.min(Math.max(parseInt($('#sc-count').value, 10) || 1, 1), 50),
       from: $('#sc-from').value, to: $('#sc-to').value, forceIntl: $('#sc-intl').checked, partners: [],
       nameStyle: 'mixed', houseSeparate: true, fillAddr2: true,
+      // Fill optional fields that were picked, so there is a value to insert into
       fillAddr34: fields.indexOf('addr3') >= 0 || fields.indexOf('addr4') >= 0,
-      fillSuburb: true, custPrefix: 'TSTCUS', custStart: '001', special: sp
+      fillSupp: fields.indexOf('supp') >= 0, fillFax: fields.indexOf('fax') >= 0,
+      fillSuburb: true, forceSuburb: fields.indexOf('suburb') >= 0,
+      custPrefix: 'TSTCUS', custStart: '001', special: sp
     });
     scView.render();
     var used = [];
