@@ -1,4 +1,4 @@
-# QA Test Data Toolkit
+# Carrier Compliance QA Test Data Toolkit
 
 Test data generator for the Carrier Compliance QA team. Static site: plain HTML/CSS/JS, no build step, no backend, no login. Everything runs in the browser.
 

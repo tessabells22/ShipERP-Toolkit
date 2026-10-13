@@ -1,17 +1,19 @@
-/* Palette tuned toward shiperp.com: deep navy, bright blue, orange accent.
+/* Palette sampled from shiperp.com: brand blue, orange CTA, light teal info bar.
    Change these tokens to re-theme the whole toolkit. */
 :root {
-  --navy: #0a2240;
-  --navy-2: #133a6b;
-  --blue: #0071ce;
-  --blue-dark: #005aa6;
-  --blue-soft: #e7f1fb;
-  --orange: #f58220;
-  --orange-dark: #d96a0b;
-  --ink: #1b2a3d;
-  --muted: #5d6c80;
-  --line: #d9e1ea;
-  --bg: #f3f6fa;
+  --navy: #1d5f8f;        /* deep brand blue: table headers, strong text */
+  --navy-2: #174d75;
+  --blue: #2c7bab;        /* ShipERP brand blue: headings, links, primary */
+  --blue-dark: #236892;
+  --blue-soft: #eaf3f9;
+  --hero: #3378ab;
+  --orange: #f39402;      /* ShipERP CTA orange */
+  --orange-dark: #d98200;
+  --teal-soft: #ebf9f9;   /* cookie/info bar */
+  --ink: #222b33;
+  --muted: #5f6b76;
+  --line: #dfe5ea;
+  --bg: #ffffff;
   --surface: #ffffff;
   --danger: #c62828;
   --danger-soft: #fdecec;
@@ -21,15 +23,15 @@
   --sap-bg: #eef1f5;
   --sap-field: #ffffff;
   --sap-label: #e1e7ee;
-  --radius: 10px;
-  --shadow: 0 1px 2px rgba(10, 34, 64, .06), 0 6px 20px rgba(10, 34, 64, .06);
-  --font-head: 'Montserrat', 'Segoe UI', Arial, sans-serif;
+  --radius: 3px;
+  --shadow: 0 1px 3px rgba(20, 50, 80, .08);
+  --font-head: 'Open Sans', 'Segoe UI', Arial, sans-serif;
   --font-body: 'Open Sans', 'Segoe UI', Arial, sans-serif;
   --font-mono: ui-monospace, 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
 }
 
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
 body {
   margin: 0;
   background: var(--bg);
@@ -42,64 +44,67 @@ h1, h2, h3 { font-family: var(--font-head); margin: 0; }
 
 .wrap { max-width: 1320px; margin: 0 auto; padding: 0 24px; }
 
-/* ---------- Header / hero ---------- */
-.topbar { background: var(--navy); color: #fff; border-bottom: 3px solid var(--orange); }
-.topbar-inner { display: flex; align-items: center; justify-content: space-between; height: 60px; gap: 12px; }
-.brand { display: flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; }
+/* ---------- Header (white, letter-spaced nav like shiperp.com) ---------- */
+.topbar { background: #fff; border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 20; }
+.topbar-inner { display: flex; align-items: center; justify-content: space-between; min-height: 70px; gap: 24px; }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--blue); text-decoration: none; flex: 0 0 auto; }
 .brand-mark { width: 30px; height: 30px; color: var(--blue); }
-.brand-text { font-family: var(--font-head); font-weight: 600; font-size: 17px; letter-spacing: .2px; }
-.brand-text strong { font-weight: 800; color: var(--orange); }
-.topbar-tag { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #b9c8dc; }
+.brand-text { font-weight: 600; font-size: 19px; letter-spacing: -.2px; color: var(--blue); }
+.brand-text strong { font-weight: 700; color: var(--blue-dark); }
 
-.hero {
-  background:
-    radial-gradient(1200px 400px at 85% -10%, rgba(0, 113, 206, .55), transparent 60%),
-    linear-gradient(135deg, var(--navy) 0%, var(--navy-2) 100%);
-  color: #fff;
-  padding: 44px 0 84px;
-}
-.eyebrow { margin: 0 0 10px; color: var(--orange); font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; font-size: 12px; }
-.hero h1 { font-size: clamp(24px, 3.4vw, 38px); line-height: 1.15; font-weight: 800; max-width: 820px; }
-.lede { margin: 14px 0 0; max-width: 760px; color: #d4deea; font-size: 15.5px; }
-
-/* ---------- Tabs ---------- */
-.tabs { display: flex; gap: 8px; margin-top: -50px; height: 50px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
 .tabs::-webkit-scrollbar { display: none; }
 .tab {
   flex: 0 0 auto;
-  display: flex; align-items: center; gap: 10px;
-  height: 50px; padding: 0 20px;
-  border: 0; border-radius: var(--radius) var(--radius) 0 0;
-  background: rgba(255, 255, 255, .14);
-  color: #fff;
-  font: 700 14px var(--font-head);
+  padding: 24px 14px 21px;
+  border: 0; border-bottom: 3px solid transparent;
+  background: none;
+  color: #111;
+  font: 500 14px var(--font-body);
+  letter-spacing: 1px;
   cursor: pointer;
-  backdrop-filter: blur(6px);
-  transition: background .15s;
+  transition: color .15s, border-color .15s;
 }
-.tab:hover { background: rgba(255, 255, 255, .24); }
-.tab.is-active { background: var(--surface); color: var(--navy); box-shadow: 0 -2px 0 var(--orange) inset; }
-.tab-num {
-  display: inline-grid; place-items: center;
-  width: 22px; height: 22px; border-radius: 50%;
-  background: var(--orange); color: #fff; font-size: 12px;
+.tab:hover { color: var(--blue); }
+.tab.is-active { color: var(--blue); border-bottom-color: var(--orange); font-weight: 600; }
+
+/* ---------- Hero (blue overlay band) ---------- */
+.hero {
+  color: #fff;
+  background:
+    repeating-linear-gradient(100deg, rgba(255,255,255,.035) 0 2px, transparent 2px 46px),
+    radial-gradient(900px 320px at 15% 110%, rgba(255,255,255,.12), transparent 60%),
+    linear-gradient(90deg, #2d6f9e 0%, var(--hero) 45%, #3a79a6 100%);
+  padding: 72px 0 64px;
 }
-.tab:not(.is-active) .tab-num { background: rgba(255, 255, 255, .25); }
+.hero-inner { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+.hero h1 { font-size: clamp(26px, 3.2vw, 38px); line-height: 1.2; font-weight: 600; max-width: 900px; }
+.lede { margin: 14px 0 26px; max-width: 760px; color: #fff; font-size: 16px; }
+.btn.btn-outline {
+  background: transparent; color: #fff; border: 2px solid #fff; text-decoration: none;
+  padding: 11px 24px; font-weight: 600; font-size: 15px;
+}
+.btn.btn-outline:hover { background: #fff; color: var(--blue); }
+
+.infobar { background: var(--teal-soft); color: #333; font-size: 13px; padding: 12px 0; border-bottom: 1px solid #d5eeee; }
 
 /* ---------- Panels ---------- */
-main.wrap { padding-top: 0; padding-bottom: 48px; }
+main.wrap { padding-top: 8px; padding-bottom: 56px; scroll-margin-top: 70px; }
 .panel {
   display: grid;
   grid-template-columns: 380px minmax(0, 1fr);
-  gap: 24px;
-  background: var(--surface);
-  border-radius: 0 var(--radius) var(--radius) var(--radius);
-  padding: 24px;
-  box-shadow: var(--shadow);
+  gap: 24px 28px;
+  padding: 32px 0 0;
 }
+.panel-head { grid-column: 1 / -1; text-align: center; margin-bottom: 4px; }
+.panel-head h2 { color: var(--blue); font-size: clamp(24px, 2.6vw, 34px); font-weight: 600; line-height: 1.2; }
+.panel-head p { margin: 8px 0 0; color: var(--ink); font-size: 15px; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
-.controls { padding: 20px; align-self: start; position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow: auto; background: #fbfcfe; }
-.controls h2 { font-size: 16px; color: var(--navy); margin-bottom: 14px; }
+.controls { padding: 20px; align-self: start; position: sticky; top: 86px; max-height: calc(100vh - 102px); overflow: auto; background: #f7fafc; }
+.controls h2 {
+  display: inline-block; font-size: 14px; font-weight: 600; color: #fff; background: var(--orange);
+  padding: 7px 16px; border-radius: var(--radius); margin-bottom: 16px;
+}
 .results { min-width: 0; }
 
 /* ---------- Form controls ---------- */
@@ -126,11 +131,11 @@ input:focus, select:focus, textarea:focus, button:focus-visible {
 .check-pad { margin-top: 26px; }
 .inline-checks { display: flex; flex-wrap: wrap; gap: 4px 16px; }
 fieldset { border: 0; border-top: 1px solid var(--line); margin: 6px 0 10px; padding: 10px 0 0; }
-legend { padding: 0 6px 0 0; font: 700 12px var(--font-head); color: var(--navy); text-transform: uppercase; letter-spacing: .6px; }
+legend { padding: 0 6px 0 0; font: 700 12px var(--font-head); color: var(--blue); text-transform: uppercase; letter-spacing: .6px; }
 details { border-top: 1px solid var(--line); padding: 10px 0 2px; margin-top: 4px; }
 details > summary {
   cursor: pointer; list-style: none;
-  font: 700 13px var(--font-head); color: var(--navy);
+  font: 700 13px var(--font-head); color: var(--blue);
   display: flex; align-items: center; gap: 8px; padding: 2px 0 10px;
 }
 details > summary::-webkit-details-marker { display: none; }
@@ -163,7 +168,7 @@ details[open] > summary::before { transform: rotate(90deg); }
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   border: 1px solid transparent; border-radius: 6px;
   padding: 8px 14px; cursor: pointer;
-  font: 700 13px var(--font-head); letter-spacing: .2px;
+  font: 600 13.5px var(--font-body); letter-spacing: .3px;
   transition: background .15s, border-color .15s, color .15s;
   white-space: nowrap;
 }
@@ -178,7 +183,7 @@ details[open] > summary::before { transform: rotate(90deg); }
 
 /* ---------- Toolbar / misc ---------- */
 .toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
-.toolbar h3 { font-size: 15px; color: var(--navy); }
+.toolbar h3 { font-size: 15px; color: var(--blue); }
 .toolbar-info { color: var(--muted); font-size: 13px; }
 .toolbar-info code { background: var(--blue-soft); color: var(--blue-dark); padding: 1px 6px; border-radius: 4px; font-weight: 700; }
 .toolbar-actions { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -192,7 +197,7 @@ mark.inj { background: var(--mark); color: #6b3d00; border-radius: 2px; padding:
 .set { margin-bottom: 18px; overflow: hidden; }
 .set-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; padding: 12px 16px; background: #f7f9fc; border-bottom: 1px solid var(--line); }
 .set-head > div:first-child { display: flex; align-items: center; gap: 10px; }
-.set-num { font: 800 14px var(--font-head); color: var(--navy); }
+.set-num { font: 700 14px var(--font-head); color: var(--blue); }
 .lane-badge { font: 700 13px var(--font-mono); background: var(--navy); color: #fff; padding: 3px 10px; border-radius: 6px; }
 .lane-badge span { color: var(--orange); }
 .set-actions { display: flex; gap: 6px; }
@@ -264,7 +269,7 @@ table.edit .c-id { min-width: 90px; }
 .totals-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-top: 16px; }
 .stat { border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; background: #fff; }
 .stat span { display: block; font-size: 12px; color: var(--muted); font-weight: 600; }
-.stat strong { display: block; font: 800 20px var(--font-head); color: var(--navy); margin: 2px 0; }
+.stat strong { display: block; font: 700 20px var(--font-head); color: var(--navy); margin: 2px 0; }
 .stat small { color: var(--muted); font-size: 12px; }
 .stat-warn { border-color: #f3b27a; background: #fff6ee; }
 .stat-warn strong { color: var(--orange-dark); }
@@ -277,7 +282,7 @@ table.edit .c-id { min-width: 90px; }
 .factors code { font-size: 12px; color: var(--ink); }
 
 /* ---------- Footer / toast ---------- */
-.footer { background: var(--navy); color: #a9b9cd; font-size: 12.5px; padding: 18px 0; }
+.footer { background: #1f2a33; color: #b8c2cb; font-size: 12.5px; padding: 18px 0; }
 .toast {
   position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px);
   background: var(--navy); color: #fff; padding: 10px 18px; border-radius: 8px;
@@ -289,14 +294,17 @@ table.edit .c-id { min-width: 90px; }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 1000px) {
-  .panel { grid-template-columns: 1fr; padding: 16px; }
+  .panel { grid-template-columns: 1fr; }
   .controls { position: static; max-height: none; }
 }
 @media (max-width: 640px) {
   .wrap { padding: 0 16px; }
-  .topbar-tag { display: none; }
-  .hero { padding: 28px 0 60px; }
-  .tab { padding: 0 14px; font-size: 13px; }
+  .topbar { position: static; }
+  .topbar-inner { flex-direction: column; align-items: stretch; gap: 0; padding-top: 10px; }
+  .tab { padding: 14px 10px 11px; font-size: 13px; letter-spacing: .5px; }
+  .hero { padding: 40px 0 36px; }
+  .hero-inner { align-items: flex-start; text-align: left; }
+  main.wrap { scroll-margin-top: 110px; }
   .fr { grid-template-columns: 1fr; gap: 2px; }
   .fc { flex-wrap: wrap; }
   .fv.w-s, .fv.w-m { flex: 1 1 100px; }

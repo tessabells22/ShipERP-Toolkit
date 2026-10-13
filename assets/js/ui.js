@@ -580,7 +580,7 @@
       else { $('#cv-tow').value = 'LB'; $('#cv-tod').value = 'IN'; }
       syncDivisor(); renderConversion();
       showTab('conv');
-      window.scrollTo({ top: $('.tabs').offsetTop - 8, behavior: 'smooth' });
+      $('#tool').scrollIntoView({ behavior: 'smooth' });
     },
     'cv-add': function () { addInputRow(); renderConversion(); var last = $$('#cv-input tbody tr').pop(); $('.c-w', last).focus(); },
     'cv-clear': function () { setInputRows([]); },
