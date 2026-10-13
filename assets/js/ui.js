@@ -665,6 +665,114 @@
     return out;
   }
 
+  /* ---------- Table → PNG (for pasting into test evidence) ---------- */
+  // Draws the rendered table onto a canvas so the image matches the screen exactly.
+  function tableToCanvas(table, title, subtitle) {
+    var SCALE = 2, PAD_X = 12, PAD_Y = 8, LINE = 17, SMALL_LINE = 14, MARGIN = 16;
+    var FONT = '13px "Open Sans", "Segoe UI", Arial, sans-serif';
+    var BOLD = '600 13px "Open Sans", "Segoe UI", Arial, sans-serif';
+    var HEAD = '700 12px "Open Sans", "Segoe UI", Arial, sans-serif';
+    var MONO = '11px ui-monospace, Consolas, "Liberation Mono", monospace';
+    var TITLE = '700 16px "Open Sans", "Segoe UI", Arial, sans-serif';
+    var css = getComputedStyle(document.documentElement);
+    var color = function (v, fb) { return (css.getPropertyValue(v) || fb).trim(); };
+    var C = { head: color('--navy', '#1d5f8f'), line: '#dfe5ea', ink: '#222b33', muted: '#5f6b76', zebra: '#f8fafc', foot: '#eef3f9', title: color('--blue', '#2c7bab') };
+
+    var readRow = function (tr, kind) {
+      return Array.from(tr.children).map(function (td) {
+        var strong = td.querySelector('strong');
+        var small = td.querySelector('small');
+        return {
+          main: (strong ? strong.textContent : (small ? td.firstChild.textContent : td.textContent)).trim(),
+          sub: small ? small.textContent.trim() : '',
+          num: td.classList.contains('num'), kind: kind, span: td.colSpan || 1
+        };
+      });
+    };
+    var head = readRow(table.tHead.rows[0], 'head');
+    var body = Array.from(table.tBodies[0].rows).map(function (r) { return readRow(r, 'body'); });
+    var foot = table.tFoot && table.tFoot.rows[0] ? readRow(table.tFoot.rows[0], 'foot') : null;
+    var ncol = head.length;
+    // Expand colspans so every row has one cell per column
+    var expand = function (row) {
+      var out = [];
+      row.forEach(function (c) { out.push(c); for (var i = 1; i < c.span; i++) out.push({ main: '', sub: '', num: c.num, kind: c.kind }); });
+      while (out.length < ncol) out.push({ main: '', sub: '', kind: row[0].kind });
+      return out.slice(0, ncol);
+    };
+    var rows = [head].concat(body).concat(foot ? [foot] : []).map(expand);
+
+    var ctx = document.createElement('canvas').getContext('2d');
+    var widths = new Array(ncol).fill(0);
+    rows.forEach(function (r) {
+      r.forEach(function (c, i) {
+        ctx.font = c.kind === 'head' ? HEAD : BOLD;
+        var w = ctx.measureText(c.main).width;
+        ctx.font = MONO;
+        if (c.sub) w = Math.max(w, ctx.measureText(c.sub).width);
+        widths[i] = Math.max(widths[i], w + PAD_X * 2);
+      });
+    });
+    var rowH = rows.map(function (r) {
+      var hasSub = r.some(function (c) { return c.sub; });
+      return PAD_Y * 2 + LINE + (hasSub ? SMALL_LINE : 0);
+    });
+    var tableW = widths.reduce(function (a, b) { return a + b; }, 0);
+    var headerH = 26 + (subtitle ? 18 : 0) + 10;
+    var W = tableW + MARGIN * 2;
+    var H = headerH + rowH.reduce(function (a, b) { return a + b; }, 0) + MARGIN * 2;
+
+    var canvas = document.createElement('canvas');
+    canvas.width = W * SCALE; canvas.height = H * SCALE;
+    ctx = canvas.getContext('2d');
+    ctx.scale(SCALE, SCALE);
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+    ctx.textBaseline = 'top';
+
+    ctx.fillStyle = C.title; ctx.font = TITLE;
+    ctx.fillText(title, MARGIN, MARGIN);
+    if (subtitle) { ctx.fillStyle = C.muted; ctx.font = FONT; ctx.fillText(subtitle, MARGIN, MARGIN + 24); }
+
+    var y = MARGIN + headerH;
+    rows.forEach(function (r, ri) {
+      var h = rowH[ri], x = MARGIN, kind = r[0].kind;
+      ctx.fillStyle = kind === 'head' ? C.head : kind === 'foot' ? C.foot : (ri % 2 === 0 ? C.zebra : '#fff');
+      ctx.fillRect(MARGIN, y, tableW, h);
+      r.forEach(function (c, ci) {
+        var w = widths[ci];
+        var tx = c.num ? x + w - PAD_X : x + PAD_X;
+        ctx.textAlign = c.num ? 'right' : 'left';
+        ctx.font = kind === 'head' ? HEAD : (c.num || kind === 'foot' ? BOLD : FONT);
+        ctx.fillStyle = kind === 'head' ? '#fff' : C.ink;
+        ctx.fillText(c.main, tx, y + PAD_Y + (kind === 'head' ? 2 : 0));
+        if (c.sub) { ctx.font = MONO; ctx.fillStyle = C.muted; ctx.fillText(c.sub, tx, y + PAD_Y + LINE); }
+        x += w;
+      });
+      ctx.textAlign = 'left';
+      ctx.fillStyle = kind === 'foot' ? C.head : C.line;
+      ctx.fillRect(MARGIN, kind === 'foot' ? y : y + h - 1, tableW, kind === 'foot' ? 2 : 1);
+      y += h;
+    });
+    ctx.strokeStyle = C.line; ctx.lineWidth = 1;
+    ctx.strokeRect(MARGIN + .5, MARGIN + headerH + .5, tableW - 1, y - MARGIN - headerH - 1);
+    return canvas;
+  }
+
+  function copyCanvas(canvas, filename) {
+    var fallback = function (err) {
+      if (err) console.warn('Clipboard image copy failed:', err);
+      var a = document.createElement('a');
+      a.href = canvas.toDataURL('image/png'); a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      toast('Image downloaded (this browser blocks copying images)');
+    };
+    if (!(navigator.clipboard && window.ClipboardItem && window.isSecureContext)) return fallback();
+    // Pass a promise so Safari keeps the click as the user gesture
+    var blob = new Promise(function (resolve) { canvas.toBlob(resolve, 'image/png'); });
+    navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+      .then(function () { toast('Table copied as image. Paste it into your test file'); }, fallback);
+  }
+
   /* ---------- Toolbar actions ---------- */
   function exportView(view, kind, name) {
     if (!view.sets.length) return toast('Generate addresses first');
@@ -694,7 +802,15 @@
       $('#cv-paste').value = ''; $('#cv-paste-box').hidden = true;
       toast('Imported ' + rows.length + ' rows');
     },
-    'cv-del': function (btn) { btn.closest('tr').remove(); renderConversion(); }
+    'cv-del': function (btn) { btn.closest('tr').remove(); renderConversion(); },
+    'cv-image': function () {
+      if (!conv || !cvOn()) return toast('Nothing to copy');
+      var o = convOpts();
+      var sub = conv.rows.length + ' HU' + (conv.rows.length === 1 ? '' : 's') + ' · ' + o.wDp + ' weight / ' + o.dDp + ' dim decimals · ' +
+        $('#cv-mode').selectedOptions[0].text.replace(/ \(.*/, '').toLowerCase() + ' rounding' +
+        (o.dimWeight ? ' · dim divisor ' + o.divisor : '') + (huSeed ? ' · seed ' + huSeed : '');
+      copyCanvas(tableToCanvas($('#cv-table'), $('#cv-title').textContent, sub), 'uom-conversion-' + stamp() + '.png');
+    }
   };
 
   document.addEventListener('click', function (e) {
