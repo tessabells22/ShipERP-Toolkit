@@ -6,11 +6,15 @@ Test data generator for the Carrier Compliance QA team. Static site: plain HTML/
 
 **1. International Addresses.** Generates Ship From / Ship To pairs (plus optional Sold To, Importer, Ultimate Consignee) for any country combination, laid out like the ShipERP address screen. Click any value to copy it. 15 countries with real city / region / postal-code combinations so carrier address validation passes. Phone numbers use ranges reserved for fiction, emails use `example.com/.net/.org`.
 
-**2. Special Characters.** Generates Ship From / Ship To addresses with special characters inserted into the fields you choose (Addr 1, Addr 2, City by default), at the beginning, middle or end, alone or clustered (e.g. `Burnaby#$`). Characters are picked from a multi-select dropdown, preloaded with the carrier table (/ERPIS/CHARS2) list; anything not listed can be typed in. Every selected character is used before any repeats, and the summary flags any that didn't fit.
+The sidebar has collapsible sections, each showing a one-line summary when closed:
+- **Shipment lane**: countries, quick lanes, number of test sets.
+- **Special characters** (switch on/off): pick characters from a multi-select dropdown, preloaded with the carrier table (/ERPIS/CHARS2) list; type anything not listed. Choose characters per field, together or apart, position (beginning / middle / end), which fields (every field except Customer #) and which partners. Every selected character is used before any repeats; the summary flags any that didn't fit. Exports gain an "Inserted characters" column.
+- **Partners & names**: extra partners, name style and prefix, Customer # numbering.
+- **Field options**: house number placement and which optional fields to fill.
 
-**3. Handling Units.** N HUs with weights and dimensions in any UoM (LB, KG, G, OZ / IN, CM, MM, M, FT), configurable ranges and decimals, optional mixed LB/IN and KG/CM in the same shipment.
+**2. Handling Units.** N HUs with weights and dimensions in any UoM (LB, KG, G, OZ / IN, CM, MM, M, FT), configurable ranges and decimals, optional mixed LB/IN and KG/CM in the same shipment.
 
-**4. UoM Conversion.** Converts HUs to the web-service UoM with the calculation shown per value, configurable rounding, optional dimensional / billable weight, and a check that flags when "sum of rounded HUs" differs from "rounded total" (a common source of carrier payload defects). Rows can come from tab 3, be typed in, or pasted from Excel.
+**3. UoM Conversion.** Converts HUs to the web-service UoM with the calculation shown per value, configurable rounding, optional dimensional / billable weight, and a check that flags when "sum of rounded HUs" differs from "rounded total" (a common source of carrier payload defects). Rows can come from the Handling Units tab, be typed in, or pasted from Excel.
 
 **Seeds.** Every generated dataset shows a seed. Untick *New seed each run*, enter the seed from a test case, and the exact same data comes back.
 

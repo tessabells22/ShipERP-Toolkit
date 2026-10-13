@@ -31,64 +31,141 @@
 
   <nav class="tabs wrap" role="tablist" aria-label="Tools">
     <button class="tab is-active" role="tab" data-tab="addr" aria-selected="true">International Addresses</button>
-    <button class="tab" role="tab" data-tab="chars" aria-selected="false">Special Characters</button>
     <button class="tab" role="tab" data-tab="hu" aria-selected="false">Handling Units</button>
     <button class="tab" role="tab" data-tab="conv" aria-selected="false">UoM Conversion</button>
   </nav>
 
   <main class="wrap" id="tool">
 
-    <!-- ================= 1. ADDRESSES ================= -->
+    <!-- ================= 1. ADDRESSES (incl. special characters) ================= -->
     <section class="panel is-active" id="panel-addr" role="tabpanel">
-      <aside class="controls card">
-        <h2>Shipment lane</h2>
-        <div class="lane">
-          <label class="field"><span>Ship From</span><select id="af-from"></select></label>
-          <button class="icon-btn" id="af-swap" type="button" title="Swap countries" aria-label="Swap countries">⇄</button>
-          <label class="field"><span>Ship To</span><select id="af-to"></select></label>
-        </div>
-        <div class="chips" id="lane-chips"></div>
-        <label class="check"><input type="checkbox" id="af-intl" checked> Force different countries (international)</label>
+      <aside class="controls card controls-acc">
 
-        <div class="row-2">
-          <label class="field"><span>Test sets</span><input type="number" id="af-count" min="1" max="50" value="3"></label>
-          <label class="field"><span>Name style</span>
-            <select id="af-namestyle"><option value="mixed">Company + person</option><option value="company">Company only</option><option value="person">Person only</option></select>
-          </label>
-        </div>
-
-        <fieldset>
-          <legend>Also generate</legend>
-          <label class="check"><input type="checkbox" name="af-partner" value="soldTo"> Sold To</label>
-          <label class="check"><input type="checkbox" name="af-partner" value="importer"> Importer</label>
-          <label class="check"><input type="checkbox" name="af-partner" value="ultimate"> Ultimate Consignee</label>
-        </fieldset>
-
-        <details>
-          <summary>Field options</summary>
-          <label class="field"><span>House number</span>
-            <select id="af-house"><option value="separate">Separate House Num field</option><option value="inline">Inside Addr 1</option></select>
-          </label>
-          <fieldset>
-            <legend>Fill optional fields</legend>
-            <label class="check"><input type="checkbox" id="af-addr2" checked> Addr 2</label>
-            <label class="check"><input type="checkbox" id="af-addr34"> Addr 3 / Addr 4</label>
-            <label class="check"><input type="checkbox" id="af-suburb" checked> Suburb (where the country uses one)</label>
-            <label class="check"><input type="checkbox" id="af-supp"> Supp (house no. supplement)</label>
-            <label class="check"><input type="checkbox" id="af-fax"> Fax</label>
-          </fieldset>
-          <label class="field"><span>Name prefix (optional, e.g. "QA ")</span><input type="text" id="af-nameprefix" placeholder="none"></label>
-          <div class="row-2">
-            <label class="field"><span>Customer # prefix</span><input type="text" id="af-custprefix" value="TSTCUS"></label>
-            <label class="field"><span>Start at</span><input type="text" id="af-custstart" value="001"></label>
+        <section class="acc is-open">
+          <div class="acc-head">
+            <button type="button" class="acc-toggle" aria-expanded="true">
+              <span class="acc-title">Shipment lane</span><span class="acc-sum" id="sum-lane"></span>
+            </button>
           </div>
-        </details>
+          <div class="acc-body">
+            <div class="lane">
+              <label class="field"><span>Ship From</span><select id="af-from"></select></label>
+              <button class="icon-btn" id="af-swap" type="button" title="Swap countries" aria-label="Swap countries">⇄</button>
+              <label class="field"><span>Ship To</span><select id="af-to"></select></label>
+            </div>
+            <div class="chips" id="lane-chips"></div>
+            <div class="row-2">
+              <label class="field"><span>Test sets</span><input type="number" id="af-count" min="1" max="50" value="3"></label>
+              <label class="check check-pad"><input type="checkbox" id="af-intl" checked> International only</label>
+            </div>
+          </div>
+        </section>
 
-        <div class="seed">
-          <label class="field"><span>Seed</span><input type="number" id="af-seed"></label>
-          <label class="check"><input type="checkbox" id="af-autoseed" checked> New seed each run</label>
+        <section class="acc acc-sp">
+          <div class="acc-head">
+            <button type="button" class="acc-toggle" aria-expanded="false">
+              <span class="acc-title">Special characters</span><span class="acc-sum" id="sum-sp"></span>
+            </button>
+            <label class="switch" title="Insert special characters"><input type="checkbox" id="sp-enabled" aria-label="Insert special characters"><span></span></label>
+          </div>
+          <div class="acc-body">
+            <div class="field">
+              <span>Characters to test</span>
+              <div class="ms" id="sc-ms">
+                <div class="ms-control">
+                  <div class="ms-chips" id="sc-ms-chips"></div>
+                  <button type="button" class="ms-toggle" id="sc-ms-toggle" aria-haspopup="listbox" aria-expanded="false">Select ▾</button>
+                </div>
+                <div class="ms-menu" id="sc-ms-menu" hidden></div>
+              </div>
+              <div class="ms-add">
+                <input type="text" id="sc-ms-input" placeholder="Not in the list? Type it, press Enter" aria-label="Add a character manually">
+                <button type="button" class="btn btn-ghost btn-sm" id="sc-ms-add">Add</button>
+              </div>
+            </div>
+            <div class="row-2">
+              <label class="field"><span>Characters per field</span><input type="number" id="sc-per" min="1" max="5" value="2"></label>
+              <label class="check check-pad"><input type="checkbox" id="sc-together" checked> Keep them together</label>
+            </div>
+            <div class="field">
+              <span>Position</span>
+              <div class="seg" role="group" aria-label="Position">
+                <label><input type="checkbox" name="sc-pos" value="start"><span>Beginning</span></label>
+                <label><input type="checkbox" name="sc-pos" value="middle"><span>Middle</span></label>
+                <label><input type="checkbox" name="sc-pos" value="end" checked><span>End</span></label>
+              </div>
+            </div>
+            <div class="field">
+              <span class="field-row">Fields <button type="button" class="link-btn" id="sc-fields-all">Select all</button></span>
+              <div class="field-grid" id="sc-fields"></div>
+            </div>
+            <label class="field"><span>Apply to</span>
+              <select id="sc-apply">
+                <option value="both">Ship From and Ship To</option>
+                <option value="to">Ship To only</option>
+                <option value="from">Ship From only</option>
+                <option value="all">All partners</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section class="acc">
+          <div class="acc-head">
+            <button type="button" class="acc-toggle" aria-expanded="false">
+              <span class="acc-title">Partners &amp; names</span><span class="acc-sum" id="sum-partners"></span>
+            </button>
+          </div>
+          <div class="acc-body">
+            <div class="field">
+              <span>Also generate</span>
+              <div class="inline-checks">
+                <label class="check"><input type="checkbox" name="af-partner" value="soldTo"> Sold To</label>
+                <label class="check"><input type="checkbox" name="af-partner" value="importer"> Importer</label>
+                <label class="check"><input type="checkbox" name="af-partner" value="ultimate"> Ultimate Consignee</label>
+              </div>
+            </div>
+            <label class="field"><span>Name style</span>
+              <select id="af-namestyle"><option value="mixed">Company + person</option><option value="company">Company only</option><option value="person">Person only</option></select>
+            </label>
+            <label class="field"><span>Name prefix (optional, e.g. "QA ")</span><input type="text" id="af-nameprefix" placeholder="none"></label>
+            <div class="row-2">
+              <label class="field"><span>Customer # prefix</span><input type="text" id="af-custprefix" value="TSTCUS"></label>
+              <label class="field"><span>Start at</span><input type="text" id="af-custstart" value="001"></label>
+            </div>
+          </div>
+        </section>
+
+        <section class="acc">
+          <div class="acc-head">
+            <button type="button" class="acc-toggle" aria-expanded="false">
+              <span class="acc-title">Field options</span><span class="acc-sum" id="sum-fields"></span>
+            </button>
+          </div>
+          <div class="acc-body">
+            <label class="field"><span>House number</span>
+              <select id="af-house"><option value="separate">Separate House Num field</option><option value="inline">Inside Addr 1</option></select>
+            </label>
+            <div class="field">
+              <span>Fill optional fields</span>
+              <div class="inline-checks">
+                <label class="check"><input type="checkbox" name="af-fill" id="af-addr2" checked> Addr 2</label>
+                <label class="check"><input type="checkbox" name="af-fill" id="af-addr34" checked> Addr 3 / 4</label>
+                <label class="check"><input type="checkbox" name="af-fill" id="af-suburb" checked> Suburb</label>
+                <label class="check"><input type="checkbox" name="af-fill" id="af-supp" checked> Supp</label>
+                <label class="check"><input type="checkbox" name="af-fill" id="af-fax" checked> Fax</label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div class="controls-foot">
+          <div class="seed">
+            <label class="field"><span>Seed</span><input type="number" id="af-seed"></label>
+            <label class="check"><input type="checkbox" id="af-autoseed" checked> New seed each run</label>
+          </div>
+          <button class="btn btn-primary btn-block" id="af-go" type="button">Generate addresses</button>
         </div>
-        <button class="btn btn-primary btn-block" id="af-go" type="button">Generate addresses</button>
       </aside>
 
       <section class="results">
@@ -100,85 +177,8 @@
             <button class="btn btn-secondary" data-action="af-csv" type="button">Download CSV</button>
           </div>
         </div>
-        <p class="hint">Click any value to copy it. Fields over the SAP field length turn red.</p>
+        <p class="hint" id="af-hint">Click any value to copy it. Fields over the SAP field length turn red.</p>
         <div id="af-results"></div>
-      </section>
-    </section>
-
-    <!-- ================= 2. SPECIAL CHARACTERS ================= -->
-    <section class="panel" id="panel-chars" role="tabpanel" hidden>
-      <aside class="controls card">
-        <h2>Special characters</h2>
-        <div class="field">
-          <span>Characters to test</span>
-          <div class="ms" id="sc-ms">
-            <div class="ms-control" id="sc-ms-control">
-              <div class="ms-chips" id="sc-ms-chips"></div>
-              <button type="button" class="ms-toggle" id="sc-ms-toggle" aria-haspopup="listbox" aria-expanded="false">Select ▾</button>
-            </div>
-            <div class="ms-menu" id="sc-ms-menu" hidden></div>
-          </div>
-          <div class="ms-add">
-            <input type="text" id="sc-ms-input" placeholder="Not in the list? Type it, press Enter" aria-label="Add a character manually">
-            <button type="button" class="btn btn-ghost btn-sm" id="sc-ms-add">Add</button>
-          </div>
-        </div>
-        <div class="row-2">
-          <label class="field"><span>Characters per field</span><input type="number" id="sc-per" min="1" max="5" value="2"></label>
-          <label class="check check-pad"><input type="checkbox" id="sc-together" checked> Keep them together</label>
-        </div>
-        <fieldset>
-          <legend>Position</legend>
-          <div class="inline-checks">
-            <label class="check"><input type="checkbox" name="sc-pos" value="start"> Beginning</label>
-            <label class="check"><input type="checkbox" name="sc-pos" value="middle"> Middle</label>
-            <label class="check"><input type="checkbox" name="sc-pos" value="end" checked> End</label>
-          </div>
-        </fieldset>
-        <fieldset>
-          <legend>Fields</legend>
-          <div class="inline-checks" id="sc-fields"></div>
-          <button type="button" class="link-btn" id="sc-fields-all">Select all</button>
-        </fieldset>
-        <label class="field"><span>Apply to</span>
-          <select id="sc-apply">
-            <option value="both">Ship From and Ship To</option>
-            <option value="to">Ship To only</option>
-            <option value="from">Ship From only</option>
-          </select>
-        </label>
-
-        <fieldset>
-          <legend>Shipment lane</legend>
-          <div class="lane">
-            <label class="field"><span>Ship From</span><select id="sc-from"></select></label>
-            <button class="icon-btn" id="sc-swap" type="button" title="Swap countries" aria-label="Swap countries">⇄</button>
-            <label class="field"><span>Ship To</span><select id="sc-to"></select></label>
-          </div>
-          <div class="row-2">
-            <label class="field"><span>Test sets</span><input type="number" id="sc-count" min="1" max="50" value="3"></label>
-            <label class="check check-pad"><input type="checkbox" id="sc-intl" checked> International only</label>
-          </div>
-        </fieldset>
-
-        <div class="seed">
-          <label class="field"><span>Seed</span><input type="number" id="sc-seed"></label>
-          <label class="check"><input type="checkbox" id="sc-autoseed" checked> New seed each run</label>
-        </div>
-        <button class="btn btn-primary btn-block" id="sc-go" type="button">Generate addresses</button>
-      </aside>
-
-      <section class="results">
-        <div class="toolbar">
-          <div class="toolbar-info" id="sc-summary"></div>
-          <div class="toolbar-actions">
-            <button class="btn btn-ghost" data-action="sc-tsv" type="button">Copy for Excel</button>
-            <button class="btn btn-ghost" data-action="sc-json" type="button">Copy JSON</button>
-            <button class="btn btn-secondary" data-action="sc-csv" type="button">Download CSV</button>
-          </div>
-        </div>
-        <p class="hint">Click any value to copy it. Inserted characters are <mark class="inj">highlighted</mark>; fields over the SAP field length turn red. Every selected character is used before any repeats.</p>
-        <div id="sc-results"></div>
       </section>
     </section>
 

@@ -339,3 +339,47 @@ table.edit .c-id { min-width: 90px; }
 .link-btn { border: 0; background: none; padding: 0; color: var(--blue); font: 600 12.5px var(--font-body); cursor: pointer; }
 .link-btn:hover { text-decoration: underline; }
 #sc-fields .check { min-width: 92px; }
+
+/* ---------- Collapsible control sections (Addresses tab) ---------- */
+.controls-acc { padding: 0; display: flex; flex-direction: column; }
+.controls-acc h2 { display: none; }
+.acc { border-bottom: 1px solid var(--line); }
+.acc-head { display: flex; align-items: center; gap: 10px; padding-right: 16px; }
+.acc-toggle {
+  flex: 1 1 auto; min-width: 0;
+  display: grid; grid-template-columns: 1fr auto; grid-template-areas: "title chev" "sum chev";
+  text-align: left; gap: 1px 10px; align-items: center;
+  border: 0; background: none; cursor: pointer; padding: 14px 4px 14px 18px;
+}
+.acc-toggle::after { content: '▸'; grid-area: chev; color: var(--orange); font-size: 13px; transition: transform .15s; }
+.acc.is-open .acc-toggle::after { transform: rotate(90deg); }
+.acc-title { grid-area: title; font: 700 14.5px var(--font-body); color: var(--blue); }
+.acc-sum { grid-area: sum; font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acc-body { display: none; padding: 2px 18px 16px; }
+.acc.is-open .acc-body { display: block; }
+.acc-toggle:hover .acc-title { color: var(--blue-dark); }
+.acc-sp.is-on { background: #fffaf2; }
+.acc-sp.is-on .acc-sum { color: var(--orange-dark); font-weight: 600; }
+
+.switch { position: relative; flex: 0 0 auto; width: 40px; height: 22px; cursor: pointer; }
+.switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.switch span { position: absolute; inset: 0; background: #c9d2db; border-radius: 999px; transition: background .15s; pointer-events: none; }
+.switch span::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.2); transition: transform .15s; }
+.switch input:checked + span { background: var(--orange); }
+.switch input:checked + span::after { transform: translateX(18px); }
+.switch input:focus-visible + span { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+.seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: #fff; }
+.seg label { flex: 1 1 0; position: relative; cursor: pointer; }
+.seg label + label { border-left: 1px solid var(--line); }
+.seg input { position: absolute; opacity: 0; }
+.seg span { display: block; text-align: center; padding: 7px 4px; font-size: 13px; color: var(--ink); }
+.seg input:checked + span { background: var(--blue); color: #fff; font-weight: 600; }
+.seg input:focus-visible + span { outline: 2px solid var(--blue); outline-offset: -2px; }
+
+.field-row { display: flex; justify-content: space-between; align-items: baseline; }
+.field-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 8px; }
+.field-grid .check { margin-bottom: 6px; }
+
+.controls-foot { position: sticky; bottom: 0; background: #fbfcfe; padding: 4px 18px 18px; border-top: 1px solid var(--line); margin-top: auto; z-index: 2; }
+.controls-foot .seed { border-top: 0; margin-top: 0; }

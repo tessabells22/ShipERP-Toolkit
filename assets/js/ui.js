@@ -140,8 +140,8 @@
   }
 
   // One instance per tab: owns its sets, seed and result container.
-  function AddressView(container, defaultPartner, withInjected) {
-    var view = { sets: [], seed: null };
+  function AddressView(container, defaultPartner) {
+    var view = { sets: [], seed: null, withInjected: false };
 
     view.render = function () {
       container.innerHTML = view.sets.map(function (set, si) {
@@ -164,13 +164,13 @@
 
     view.rows = function () {
       var head = ['Set', 'Lane', 'Partner'].concat(Gen.FIELDS.map(function (f) { return Gen.FIELD_LABELS[f]; }));
-      if (withInjected) head.push('Inserted characters');
+      if (view.withInjected) head.push('Inserted characters');
       var rows = [head];
       view.sets.forEach(function (set) {
         set.partners.forEach(function (p) {
           var flat = Gen.flatten(p);
           var r = [set.index, set.from + '-' + set.to, p.label].concat(Gen.FIELDS.map(function (f) { return flat[f]; }));
-          if (withInjected) r.push(injectedChars(p));
+          if (view.withInjected) r.push(injectedChars(p));
           rows.push(r);
         });
       });
@@ -216,10 +216,10 @@
   }
 
   /* =========================================================
-   * 1. Addresses
+   * 1. Addresses (special characters are an optional section)
    * ========================================================= */
   wireLane('af', 'US', 'MX');
-  var addrView = AddressView($('#af-results'), 'shipTo', false);
+  var addrView = AddressView($('#af-results'), 'shipTo');
 
   $('#lane-chips').innerHTML = Data.LANES.map(function (l) {
     return '<button type="button" class="chip" data-from="' + l[0] + '" data-to="' + l[1] + '">' + l[0] + ' → ' + l[1] + '</button>';
@@ -232,30 +232,18 @@
     generateAddresses();
   });
 
-  function addressOptions() {
-    return {
-      count: Math.min(Math.max(parseInt($('#af-count').value, 10) || 1, 1), 50),
-      from: $('#af-from').value, to: $('#af-to').value, forceIntl: $('#af-intl').checked,
-      partners: checkedValues('af-partner'),
-      nameStyle: $('#af-namestyle').value, namePrefix: $('#af-nameprefix').value,
-      houseSeparate: $('#af-house').value === 'separate',
-      fillSupp: $('#af-supp').checked, fillAddr2: $('#af-addr2').checked, fillAddr34: $('#af-addr34').checked,
-      fillSuburb: $('#af-suburb').checked, fillFax: $('#af-fax').checked,
-      custPrefix: $('#af-custprefix').value, custStart: $('#af-custstart').value || '001'
-    };
+  /* ---------- Collapsible sections ---------- */
+  function setOpen(acc, open) {
+    acc.classList.toggle('is-open', open);
+    $('.acc-toggle', acc).setAttribute('aria-expanded', open);
   }
+  $$('.acc-toggle').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var acc = btn.closest('.acc');
+      setOpen(acc, !acc.classList.contains('is-open'));
+    });
+  });
 
-  function generateAddresses() {
-    addrView.seed = seedFor('#af-seed', '#af-autoseed');
-    addrView.sets = Gen.generateAddressSets(addrView.seed, addressOptions());
-    addrView.render();
-    $('#af-summary').innerHTML = addrView.sets.length + ' test set' + (addrView.sets.length > 1 ? 's' : '') + ' · seed <code>' + addrView.seed + '</code>';
-  }
-  $('#af-go').addEventListener('click', generateAddresses);
-
-  /* =========================================================
-   * 2. Special characters: addresses with characters inserted
-   * ========================================================= */
   var CHAR_NAMES = {
     '#': 'Number sign', '$': 'Dollar', '%': 'Percent', '&': 'Ampersand', "'": 'Apostrophe', '(': 'Left parenthesis',
     ')': 'Right parenthesis', '*': 'Asterisk', '<': 'Less-than', '>': 'Greater-than', '@': 'At sign', '^': 'Caret',
@@ -329,54 +317,109 @@
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') toggleMenu(false); });
 
   var SC_FIELD_LABELS = { region: 'State', postcode: 'PostCode', country: 'Ctry' };
+  var SC_FIELD_LABELS = { region: 'State', postcode: 'PostCode', country: 'Ctry' };
+  var fieldName = function (f) { return SC_FIELD_LABELS[f] || Gen.FIELD_LABELS[f]; };
   $('#sc-fields').innerHTML = Gen.INJECTABLE.map(function (f) {
     var on = ['addr1', 'addr2', 'city'].indexOf(f) >= 0;
-    return '<label class="check"><input type="checkbox" name="sc-field" value="' + f + '"' + (on ? ' checked' : '') + '> ' +
-      (SC_FIELD_LABELS[f] || Gen.FIELD_LABELS[f]) + '</label>';
+    return '<label class="check"><input type="checkbox" name="sc-field" value="' + f + '"' + (on ? ' checked' : '') + '> ' + fieldName(f) + '</label>';
   }).join('');
   $('#sc-fields-all').addEventListener('click', function () {
     var boxes = $$('input[name="sc-field"]');
     var all = boxes.every(function (b) { return b.checked; });
     boxes.forEach(function (b) { b.checked = !all; });
-    this.textContent = all ? 'Select all' : 'Clear';
+    updateSummaries();
   });
-  wireLane('sc', 'US', 'CA');
-  var scView = AddressView($('#sc-results'), 'shipTo', true);
 
-  function generateSpecial() {
+  $('#sp-enabled').addEventListener('change', function () {
+    if (this.checked) setOpen(this.closest('.acc'), true);
+    updateSummaries();
+  });
+
+  /* ---------- One-line summaries on each section header ---------- */
+  var POS_LABELS = { start: 'Beginning', middle: 'Middle', end: 'End' };
+  function updateSummaries() {
+    var from = $('#af-from').value, to = $('#af-to').value;
+    var n = parseInt($('#af-count').value, 10) || 1;
+    $('#sum-lane').textContent = (from === 'RANDOM' ? 'Random' : from) + ' → ' + (to === 'RANDOM' ? 'Random' : to) + ' · ' + n + ' set' + (n > 1 ? 's' : '');
+
+    var on = $('#sp-enabled').checked;
+    $('.acc-sp').classList.toggle('is-on', on);
+    if (!on) $('#sum-sp').textContent = 'Off';
+    else {
+      var fields = checkedValues('sc-field');
+      var fl = fields.length === Gen.INJECTABLE.length ? 'all fields' :
+        fields.length > 3 ? fields.length + ' fields' : fields.map(fieldName).join(', ') || 'no fields';
+      $('#sum-sp').textContent = scSelected.length + ' chars · ' + fl + ' · ' +
+        (checkedValues('sc-pos').map(function (p) { return POS_LABELS[p]; }).join('/') || 'no position');
+    }
+
+    var partners = checkedValues('af-partner');
+    $('#sum-partners').textContent = 'Ship From, Ship To' + (partners.length ? ' +' + partners.length : '') + ' · ' + $('#af-namestyle').selectedOptions[0].text;
+
+    var fills = $$('input[name="af-fill"]');
+    var filled = fills.filter(function (b) { return b.checked; }).length;
+    $('#sum-fields').textContent = (filled === fills.length ? 'All optional fields filled' : filled + ' of ' + fills.length + ' optional filled') +
+      ($('#af-house').value === 'inline' ? ' · house no. in Addr 1' : '');
+  }
+  $('#panel-addr .controls').addEventListener('change', updateSummaries);
+  $('#panel-addr .controls').addEventListener('input', updateSummaries);
+  // Chip edits in the multi-select re-render, so refresh the summary after them too
+  $('#sc-ms').addEventListener('click', function () { setTimeout(updateSummaries, 0); });
+  $('#sc-ms-input').addEventListener('keydown', function (e) { if (e.key === 'Enter') setTimeout(updateSummaries, 0); });
+
+  function generateAddresses() {
+    var spOn = $('#sp-enabled').checked;
     var fields = checkedValues('sc-field');
     var sp = {
-      enabled: true, chars: scSelected.slice(), positions: checkedValues('sc-pos'), fields: fields,
+      enabled: spOn, chars: scSelected.slice(), positions: checkedValues('sc-pos'), fields: fields,
       apply: $('#sc-apply').value, together: $('#sc-together').checked,
       perField: Math.min(Math.max(parseInt($('#sc-per').value, 10) || 1, 1), 5)
     };
-    if (!sp.chars.length) return toast('Select at least one character');
-    if (!sp.positions.length) return toast('Pick at least one position');
-    if (!fields.length) return toast('Pick at least one field');
-    scView.seed = seedFor('#sc-seed', '#sc-autoseed');
-    scView.sets = Gen.generateAddressSets(scView.seed, {
-      count: Math.min(Math.max(parseInt($('#sc-count').value, 10) || 1, 1), 50),
-      from: $('#sc-from').value, to: $('#sc-to').value, forceIntl: $('#sc-intl').checked, partners: [],
-      nameStyle: 'mixed', houseSeparate: true, fillAddr2: true,
-      // Every field gets a value so any of them can be tested
-      fillAddr34: true, fillSupp: true, fillFax: true, fillSuburb: true, forceSuburb: true,
-      custPrefix: 'TSTCUS', custStart: '001', special: sp
+    if (spOn) {
+      if (!sp.chars.length) return toast('Select at least one special character');
+      if (!sp.positions.length) return toast('Pick at least one position');
+      if (!fields.length) return toast('Pick at least one field for special characters');
+    }
+    // A field picked for special characters is always filled, so there is a value to insert into
+    var picked = function (f) { return spOn && fields.indexOf(f) >= 0; };
+    addrView.seed = seedFor('#af-seed', '#af-autoseed');
+    addrView.sets = Gen.generateAddressSets(addrView.seed, {
+      count: Math.min(Math.max(parseInt($('#af-count').value, 10) || 1, 1), 50),
+      from: $('#af-from').value, to: $('#af-to').value, forceIntl: $('#af-intl').checked,
+      partners: checkedValues('af-partner'),
+      nameStyle: $('#af-namestyle').value, namePrefix: $('#af-nameprefix').value,
+      houseSeparate: $('#af-house').value === 'separate' || picked('houseNum') || picked('supp'),
+      fillAddr2: $('#af-addr2').checked || picked('addr2'),
+      fillAddr34: $('#af-addr34').checked || picked('addr3') || picked('addr4'),
+      fillSuburb: $('#af-suburb').checked || picked('suburb'),
+      forceSuburb: $('#af-suburb').checked || picked('suburb'),
+      fillSupp: $('#af-supp').checked || picked('supp'),
+      fillFax: $('#af-fax').checked || picked('fax'),
+      custPrefix: $('#af-custprefix').value, custStart: $('#af-custstart').value || '001',
+      special: sp
     });
-    scView.render();
-    var used = [];
-    scView.sets.forEach(function (set) {
-      set.partners.forEach(function (p) {
-        Gen.FIELDS.forEach(function (f) {
-          p.fields[f].forEach(function (seg) { if (seg.inj) Array.from(seg.t).forEach(function (c) { if (used.indexOf(c) < 0) used.push(c); }); });
+    addrView.withInjected = spOn;
+    addrView.render();
+
+    var summary = addrView.sets.length + ' test set' + (addrView.sets.length > 1 ? 's' : '') + ' · seed <code>' + addrView.seed + '</code>';
+    if (spOn) {
+      var used = [];
+      addrView.sets.forEach(function (set) {
+        set.partners.forEach(function (p) {
+          Gen.FIELDS.forEach(function (f) {
+            p.fields[f].forEach(function (seg) { if (seg.inj) Array.from(seg.t).forEach(function (c) { if (used.indexOf(c) < 0) used.push(c); }); });
+          });
         });
       });
-    });
-    var missing = sp.chars.filter(function (c) { return used.indexOf(c) < 0; });
-    $('#sc-summary').innerHTML = scView.sets.length + ' test set' + (scView.sets.length > 1 ? 's' : '') + ' · seed <code>' + scView.seed + '</code> · ' +
-      used.length + ' of ' + sp.chars.length + ' characters used' +
-      (missing.length ? ' <span class="warn-text">(add more sets or fields to cover ' + esc(missing.map(Core.visible).join(' ')) + ')</span>' : '');
+      var missing = sp.chars.filter(function (c) { return used.indexOf(c) < 0; });
+      summary += ' · ' + used.length + ' of ' + sp.chars.length + ' special characters used' +
+        (missing.length ? ' <span class="warn-text">(add more sets or fields to cover ' + esc(missing.map(Core.visible).join(' ')) + ')</span>' : '');
+    }
+    $('#af-summary').innerHTML = summary;
+    $('#af-hint').innerHTML = 'Click any value to copy it. Fields over the SAP field length turn red.' +
+      (spOn ? ' Inserted characters are <mark class="inj">highlighted</mark>; every selected character is used before any repeats.' : '');
   }
-  $('#sc-go').addEventListener('click', generateSpecial);
+  $('#af-go').addEventListener('click', generateAddresses);
 
   /* =========================================================
    * 3. Handling units
@@ -625,9 +668,6 @@
     'af-tsv': function () { exportView(addrView, 'tsv', 'addresses'); },
     'af-json': function () { exportView(addrView, 'json', 'addresses'); },
     'af-csv': function () { exportView(addrView, 'csv', 'addresses'); },
-    'sc-tsv': function () { exportView(scView, 'tsv', 'special-char-addresses'); },
-    'sc-json': function () { exportView(scView, 'json', 'special-char-addresses'); },
-    'sc-csv': function () { exportView(scView, 'csv', 'special-char-addresses'); },
     'hu-tsv': function () { if (!hus.length) return toast('Generate HUs first'); copy(Core.toTSV(huRows()), 'Copied ' + hus.length + ' HUs'); },
     'hu-json': function () { if (!hus.length) return toast('Generate HUs first'); copy(JSON.stringify({ seed: huSeed, handlingUnits: hus }, null, 2), 'JSON copied'); },
     'hu-csv': function () { if (!hus.length) return toast('Generate HUs first'); download('handling-units-seed' + huSeed + '-' + stamp() + '.csv', Core.toCSV(huRows())); },
@@ -684,8 +724,8 @@
 
   /* ---------- Init ---------- */
   renderMultiSelect();
+  updateSummaries();
   generateAddresses();
-  generateSpecial();
   generateHUs();
   ACTIONS['cv-sample']();
   try {
