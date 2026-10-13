@@ -1,5 +1,7 @@
 # ShipERP QA Toolkit
 
+Live: https://shiperp-toolkit.shiperp-qa.workers.dev/
+
 Test data generator for the Carrier Compliance QA team. Static site: plain HTML/CSS/JS, no build step, no backend, no login. Everything runs in the browser.
 
 ## What it does
