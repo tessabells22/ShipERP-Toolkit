@@ -4,7 +4,7 @@ Test data generator for the Carrier Compliance QA team. Static site: plain HTML/
 
 ## What it does
 
-**1. International Addresses.** Generates Ship From / Ship To pairs (plus optional Sold To, Importer, Ultimate Consignee) for any country combination, laid out like the ShipERP address screen. Click any value to copy it. 15 countries with real city / region / postal-code combinations so carrier address validation passes. Phone numbers use ranges reserved for fiction, emails use `example.com/.net/.org`.
+**1. Addresses.** Generates Ship From / Ship To pairs (plus optional Sold To, Importer, Ultimate Consignee) for any country combination, laid out like the ShipERP address screen. Click any value to copy it. 15 countries with real city / region / postal-code combinations so carrier address validation passes. Phone numbers use ranges reserved for fiction, emails use `example.com/.net/.org`.
 
 The sidebar has collapsible sections, each showing a one-line summary when closed:
 - **Shipment lane**: countries, quick lanes, number of test sets.
